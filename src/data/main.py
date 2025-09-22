@@ -5,6 +5,7 @@ from src.data.pipeline import download_zips
 
 
 def setup_logging():
+    """Set up logging configuration."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
@@ -13,6 +14,7 @@ def setup_logging():
 
 
 def main():
+    """Run data collection pipeline."""
     setup_logging()
 
     pipeline_steps = {
@@ -30,22 +32,22 @@ def main():
     args = parser.parse_args()
 
     for year in args.years:
-        logging.info(f"✨✨✨ Starting data collection pipeline for year: {year} ✨✨✨")
+        logging.info("✨✨✨ Starting data collection pipeline for year: %s ✨✨✨", year)
 
         for step_name, step_func in pipeline_steps.items():
-            logging.info(f"Running step: '{step_name}' for year {year}... .")
+            logging.info("Running step: '%s' for year %s... .", step_name, year)
 
             try:
                 step_func(year)
-                logging.info(f"Successfully completed step: '{step_name}' for year {year}.")
+                logging.info("Successfully completed step: '%s' for year %s.", step_name, year)
 
-            except Exception as e:
+            except Exception as _:
                 logging.error(
-                    f"Failed at step: '{step_name}' for year {year}. Halting process for this year.", exc_info=True
+                    "Failed at step: '%s' for year %s. Halting process for this year.", step_name, year, exc_info=True
                 )
                 break
 
-        logging.info(f"✨✨✨ Finished data collection pipeline for year: {year} ✨✨✨")
+        logging.info("✨✨✨ Finished data collection pipeline for year: %s ✨✨✨", year)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import src.config as config
 
 
 def run(year: int):
+    """Download log zip file."""
     config.LOG_ZIPS_DIR.mkdir(parents=True, exist_ok=True)
 
     file_name = config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
@@ -13,10 +14,10 @@ def run(year: int):
     url = config.TENHO_LOG_ZIP_URL_FORMAT.format(year=year)
 
     if file_path.exists():
-        logging.info(f"File '{file_name}' already exists. Skipping download.")
+        logging.info("File '%s' already exists. Skipping download.", file_name)
         return
 
-    logging.info(f"Downloading '{file_name}' from {url}... .")
+    logging.info("Downloading '%s' from %s... .", file_name, url)
 
     try:
         response = requests.get(url, headers=config.TENHO_HEADERS, stream=True)
@@ -34,10 +35,10 @@ def run(year: int):
                 size = f.write(chunk)
                 bar.update(size)
 
-        logging.info(f"Successfully downloaded '{file_name}'.")
+        logging.info("Successfully downloaded '%s'.", file_name)
 
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to download {file_name}. Cleaning up.")
+    except requests.exceptions.RequestException as _:
+        logging.error("Failed to download '%s'. Cleaning up.", file_name)
 
         if file_path.exists():
             file_path.unlink()
