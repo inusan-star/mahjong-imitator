@@ -23,7 +23,9 @@ def main():
         "decompress_archives": decompress_archives.run,
     }
 
-    parser = argparse.ArgumentParser(description="Data collection pipeline.")
+    parser = argparse.ArgumentParser(
+        description="Data collection pipeline.", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
         "--years",
         type=int,
@@ -31,12 +33,23 @@ def main():
         required=True,
         help="List of years to process (e.g., --years 2023 2024)",
     )
+    parser.add_argument(
+        "--from-step",
+        type=str,
+        choices=pipeline_steps.keys(),
+        default=list(pipeline_steps.keys())[0],
+        help="The step to start the pipeline from",
+    )
     args = parser.parse_args()
+
+    all_step_names = list(pipeline_steps.keys())
+    start_step_index = all_step_names.index(args.from_step)
+    steps_to_run = {name: pipeline_steps[name] for name in all_step_names[start_step_index:]}
 
     for year in args.years:
         logging.info("✨✨✨ Starting data collection pipeline for year: %s ✨✨✨", year)
 
-        for step_name, step_func in pipeline_steps.items():
+        for step_name, step_func in steps_to_run.items():
             logging.info("Running step: '%s' for year %s...", step_name, year)
 
             try:
