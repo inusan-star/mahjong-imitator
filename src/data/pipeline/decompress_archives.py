@@ -16,7 +16,7 @@ def run(year: int):
     gz_output_dir = config.GZIPPED_LOGS_DIR / str(year)
 
     if not zip_filepath.exists():
-        logging.warning("File '%s' not found. Skipping decompression.", zip_filename)
+        logging.info("File '%s' not found. Skipping decompression.", zip_filename)
         return
 
     gz_output_dir.mkdir(parents=True, exist_ok=True)
