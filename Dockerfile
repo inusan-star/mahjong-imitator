@@ -6,7 +6,9 @@ RUN apt-get update && \
 
 RUN pip install --upgrade pip setuptools wheel
 
-RUN useradd --create-home user
+ARG UID
+ARG GID
+RUN groupadd -g $GID user && useradd -u $UID -g $GID -m user
 
 RUN mkdir /app && chown -R user:user /app
 
@@ -15,9 +17,7 @@ USER user
 WORKDIR /app
 
 COPY --chown=user:user requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user:user . .
-
 RUN pip install -e .

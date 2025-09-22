@@ -1,6 +1,10 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        UID: ${UID}
+        GID: ${GID}
     platform: linux/amd64
     container_name: mahjong-imitator-app
     hostname: mahjong-imitator

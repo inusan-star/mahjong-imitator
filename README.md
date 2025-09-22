@@ -3,7 +3,7 @@
 ## Environment Setup
 
 ### 1. Configure Environment Variables
-Create your local environment file from the example, then set your secure password.
+Create your local environment file from the example, then set your user ID and group ID, secure password.
 ```
 cp .env.example .env
 ```
