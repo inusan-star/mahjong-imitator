@@ -8,14 +8,14 @@ RUN pip install --upgrade pip setuptools wheel
 
 RUN useradd --create-home user
 
-RUN mkdir /app && chown -R user:user /app
-
 USER user
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY --chown=user:user requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY --chown=user:user . .
+
+RUN pip install -e .
