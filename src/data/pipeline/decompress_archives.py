@@ -1,3 +1,4 @@
+import gzip
 import logging
 import pathlib
 import shutil
@@ -12,25 +13,25 @@ def run(year: int):
     """Decompress log archive."""
     zip_filename = config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
     zip_filepath = config.LOG_ZIPS_DIR / zip_filename
-    output_dir = config.GZIPPED_LOGS_DIR / str(year)
+    gz_output_dir = config.GZIPPED_LOGS_DIR / str(year)
 
     if not zip_filepath.exists():
         logging.warning("File '%s' not found. Skipping decompression.", zip_filename)
         return
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    gz_output_dir.mkdir(parents=True, exist_ok=True)
 
-    logging.info("Decompressing '%s' to '%s'...", zip_filename, output_dir)
+    logging.info("Decompressing '%s' to '%s'...", zip_filename, gz_output_dir)
 
     try:
         with zipfile.ZipFile(zip_filepath, "r") as zip_ref:
             member_list = [
-                member for member in zip_ref.infolist() if member.filename.endswith(".gz") and not member.is_dir()
+                member for member in zip_ref.infolist() if member.filename.endswith(".html.gz") and not member.is_dir()
             ]
 
             for member in tqdm(member_list, desc=f"Decompressing ZIP ({year})"):
                 basename = pathlib.Path(member.filename).name
-                target_path = output_dir / basename
+                target_path = gz_output_dir / basename
 
                 if target_path.exists():
                     continue
@@ -42,4 +43,32 @@ def run(year: int):
 
     except zipfile.BadZipFile as _:
         logging.error("Failed to decompress '%s'.", zip_filename)
+        raise
+
+    txt_output_dir = config.TEXT_LOGS_DIR / str(year)
+    gz_files = sorted(list(gz_output_dir.glob("*.html.gz")))
+
+    if not gz_files:
+        logging.info("No *.gz files found in '%s'. Skipping decompression.", gz_output_dir)
+        return
+
+    txt_output_dir.mkdir(parents=True, exist_ok=True)
+
+    logging.info("Decompressing *.gz files to '%s'...", txt_output_dir)
+
+    try:
+        for gz_file in tqdm(gz_files, desc=f"Decompressing GZ ({year})"):
+            txt_filename = gz_file.name.replace(".html.gz", ".txt")
+            txt_filepath = txt_output_dir / txt_filename
+
+            if txt_filepath.exists():
+                continue
+
+            with gzip.open(gz_file, "rb") as f_gz, open(txt_filepath, "wt", encoding="utf-8") as f_txt:
+                f_txt.write(f_gz.read().decode("utf-8"))
+
+        logging.info("Successfully decompressed *.gz files.")
+
+    except gzip.BadGzipFile as _:
+        logging.error("Failed to decompress *.gz files.")
         raise
