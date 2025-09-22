@@ -1,5 +1,7 @@
 from pathlib import Path
 
+REQUESTS_TIMEOUT = 30
+
 _CONFIG_FILE_PATH = Path(__file__).resolve()
 SRC_ROOT = _CONFIG_FILE_PATH.parent
 PROJECT_ROOT = SRC_ROOT.parent
