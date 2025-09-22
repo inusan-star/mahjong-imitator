@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from src.data.pipeline import download_zips
+from src.data.pipeline import decompress_archives
 
 
 def setup_logging():
@@ -19,6 +20,7 @@ def main():
 
     pipeline_steps = {
         "download_zips": download_zips.run,
+        "decompress_archives": decompress_archives.run,
     }
 
     parser = argparse.ArgumentParser(description="Data collection pipeline.")
@@ -35,7 +37,7 @@ def main():
         logging.info("✨✨✨ Starting data collection pipeline for year: %s ✨✨✨", year)
 
         for step_name, step_func in pipeline_steps.items():
-            logging.info("Running step: '%s' for year %s... .", step_name, year)
+            logging.info("Running step: '%s' for year %s...", step_name, year)
 
             try:
                 step_func(year)

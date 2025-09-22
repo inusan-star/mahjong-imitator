@@ -1,4 +1,5 @@
 import logging
+
 import requests
 from tqdm import tqdm
 
@@ -6,7 +7,7 @@ import src.config as config
 
 
 def run(year: int):
-    """Download log zip file."""
+    """Download log zip."""
     config.LOG_ZIPS_DIR.mkdir(parents=True, exist_ok=True)
 
     file_name = config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
@@ -17,7 +18,7 @@ def run(year: int):
         logging.info("File '%s' already exists. Skipping download.", file_name)
         return
 
-    logging.info("Downloading '%s' from %s... .", file_name, url)
+    logging.info("Downloading '%s' from %s...", file_name, url)
 
     try:
         response = requests.get(url, headers=config.TENHO_HEADERS, stream=True, timeout=config.REQUESTS_TIMEOUT)
@@ -25,7 +26,7 @@ def run(year: int):
         total_size = int(response.headers.get("content-length", 0))
 
         with open(file_path, "wb") as f, tqdm(
-            desc=file_name,
+            desc=f"Downloading ZIP ({year})",
             total=total_size,
             unit="iB",
             unit_scale=True,

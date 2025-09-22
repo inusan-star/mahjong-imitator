@@ -2,13 +2,17 @@ from pathlib import Path
 
 REQUESTS_TIMEOUT = 30
 
-_CONFIG_FILE_PATH = Path(__file__).resolve()
-SRC_ROOT = _CONFIG_FILE_PATH.parent
+_CONFIG_FILEPATH = Path(__file__).resolve()
+SRC_ROOT = _CONFIG_FILEPATH.parent
 PROJECT_ROOT = SRC_ROOT.parent
 
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
+INTERIM_DATA_DIR = DATA_DIR / "interim"
+
 LOG_ZIPS_DIR = RAW_DATA_DIR / "log_zips"
+GZIPPED_LOGS_DIR = INTERIM_DATA_DIR / "gzipped_logs"
+TEXT_LOGS_DIR = INTERIM_DATA_DIR / "text_logs"
 
 TENHO_RAW_DATA_URL = "https://tenhou.net/sc/raw/"
 TENHO_LOG_ZIP_FILENAME_FORMAT = "scraw{year}.zip"
