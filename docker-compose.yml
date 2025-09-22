@@ -1,0 +1,45 @@
+services:
+  app:
+    build: .
+    platform: linux/amd64
+    container_name: mahjong-imitator-app
+    hostname: mahjong-imitator
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    ports:
+      - "${APP_PORT}:8000"
+    volumes:
+      - .:/app
+
+  db:
+    image: mariadb:10.11
+    container_name: mahjong-imitator-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - mahjong_imitator_data:/var/lib/mysql
+
+  flyway:
+    image: flyway/flyway:11.9
+    container_name: mahjong-imitator-flyway
+    command: migrate
+    environment:
+      - FLYWAY_URL=jdbc:mariadb://db:3306/${DB_DATABASE}
+      - FLYWAY_USER=${DB_USER}
+      - FLYWAY_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./schema/conf/flyway.conf:/flyway/conf/flyway.conf
+      - ./schema/migrations:/flyway/migrations
+    depends_on:
+      - db
+
+volumes:
+  mahjong_imitator_data:
+    driver: local
