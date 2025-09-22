@@ -1,2 +1,11 @@
+# Data files
+/data
+
 # Environment file
 .env
+
+# Mypy cache files
+.mypy_cache/
+
+# Python cache files
+__pycache__/
