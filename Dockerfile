@@ -8,9 +8,9 @@ RUN pip install --upgrade pip setuptools wheel
 
 ARG UID
 ARG GID
-RUN groupadd -g $GID user && useradd -u $UID -g $GID -m user
+RUN if ! getent group $GID > /dev/null; then groupadd -g $GID user; fi && useradd -u $UID -g $GID -m user
 
-RUN mkdir /app && chown -R user:user /app
+RUN mkdir /app && chown -R $UID:$GID /app
 
 USER user
 
