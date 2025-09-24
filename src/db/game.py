@@ -23,7 +23,7 @@ class GameRepository:
         self._session = session
 
     def bulk_insert(self, records: list[dict]) -> int:
-        """Bulk insert records."""
+        """Bulk insert."""
         if not records:
             return 0
 

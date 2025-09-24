@@ -4,7 +4,7 @@ import pathlib
 import shutil
 import zipfile
 
-from tqdm import tqdm
+from tqdm.rich import tqdm
 
 import src.config as config
 
@@ -21,7 +21,7 @@ def run(year: int):
 
     gz_output_dir.mkdir(parents=True, exist_ok=True)
 
-    logging.info("Decompressing '%s' to '%s'...", zip_filename, gz_output_dir)
+    logging.info("Decompressing '%s' to '%s' ...", zip_filename, gz_output_dir)
 
     try:
         with zipfile.ZipFile(zip_filepath, "r") as zip_ref:
@@ -29,7 +29,7 @@ def run(year: int):
                 member for member in zip_ref.infolist() if member.filename.endswith(".html.gz") and not member.is_dir()
             ]
 
-            for member in tqdm(member_list, desc=f"Decompressing ZIP ({year})"):
+            for member in tqdm(member_list, desc="Decompressing ZIP"):
                 basename = pathlib.Path(member.filename).name
                 target_path = gz_output_dir / basename
 
@@ -54,10 +54,10 @@ def run(year: int):
 
     txt_output_dir.mkdir(parents=True, exist_ok=True)
 
-    logging.info("Decompressing *.gz files to '%s'...", txt_output_dir)
+    logging.info("Decompressing *.gz files to '%s' ...", txt_output_dir)
 
     try:
-        for gz_file in tqdm(gz_files, desc=f"Decompressing GZ ({year})"):
+        for gz_file in tqdm(gz_files, desc="Decompressing GZ"):
             txt_filename = gz_file.name.replace(".html.gz", ".txt")
             txt_filepath = txt_output_dir / txt_filename
 

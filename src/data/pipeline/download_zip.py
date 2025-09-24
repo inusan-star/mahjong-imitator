@@ -1,7 +1,7 @@
 import logging
 
 import requests
-from tqdm import tqdm
+from tqdm.rich import tqdm
 
 import src.config as config
 
@@ -18,7 +18,7 @@ def run(year: int):
         logging.info("File '%s' already exists. Skipping download.", file_name)
         return
 
-    logging.info("Downloading '%s' from %s...", file_name, url)
+    logging.info("Downloading '%s' from %s ...", file_name, url)
 
     try:
         response = requests.get(url, headers=config.TENHO_HEADERS, stream=True, timeout=config.REQUESTS_TIMEOUT)
@@ -26,7 +26,7 @@ def run(year: int):
         total_size = int(response.headers.get("content-length", 0))
 
         with open(file_path, "wb") as f, tqdm(
-            desc=f"Downloading ZIP ({year})",
+            desc="Downloading ZIP",
             total=total_size,
             unit="iB",
             unit_scale=True,

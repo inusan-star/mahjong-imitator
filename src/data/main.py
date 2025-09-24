@@ -1,15 +1,25 @@
 import argparse
 import logging
+import warnings
+
+from rich.logging import RichHandler
+from tqdm import TqdmExperimentalWarning
 
 from src.data.pipeline import download_zip, decompress_archives, extract_urls
 
 
 def setup_logging():
     """Set up logging configuration."""
+    warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(message)s",
+        handlers=[
+            RichHandler(
+                rich_tracebacks=True,
+                log_time_format="[%Y-%m-%d %H:%M:%S]",
+            )
+        ],
     )
 
 
@@ -47,22 +57,20 @@ def main():
     steps_to_run = {name: pipeline_steps[name] for name in all_step_names[start_step_index:]}
 
     for year in args.years:
-        logging.info("✨✨✨ Starting data collection pipeline for year: %s ✨✨✨", year)
+        logging.info("🀄🀄🀄 Starting data collection pipeline for year: %s 🀄🀄🀄", year)
 
         for step_name, step_func in steps_to_run.items():
-            logging.info("Running step: '%s' for year %s...", step_name, year)
+            logging.info("Running step: '%s' ...", step_name)
 
             try:
                 step_func(year)
-                logging.info("Successfully completed step: '%s' for year %s.", step_name, year)
+                logging.info("Successfully completed step: '%s'.", step_name)
 
             except Exception as _:
-                logging.error(
-                    "Failed at step: '%s' for year %s. Halting process for this year.", step_name, year, exc_info=True
-                )
+                logging.error("Failed at step: '%s'. Halting process.", step_name, exc_info=True)
                 break
 
-        logging.info("✨✨✨ Finished data collection pipeline for year: %s ✨✨✨", year)
+        logging.info("🀄🀄🀄 Finished data collection pipeline for year: %s 🀄🀄🀄", year)
 
 
 if __name__ == "__main__":

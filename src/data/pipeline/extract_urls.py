@@ -3,7 +3,7 @@ import logging
 import re
 
 from sqlalchemy.exc import SQLAlchemyError
-from tqdm import tqdm
+from tqdm.rich import tqdm
 
 import src.config as config
 from src.db.game import GameRepository
@@ -24,27 +24,27 @@ def run(year: int):
         logging.info("No *.txt files found in '%s'. Skipping extraction.", txt_dir)
         return
 
-    logging.info("Extracting URLs from *.txt files in '%s'...", txt_dir)
+    logging.info("Extracting URLs from *.txt files in '%s' ...", txt_dir)
 
     games_to_insert = []
     log_id_pattern = re.compile(config.TENHO_LOG_ID_REGEX)
 
-    for txt_file in tqdm(txt_files, desc=f"Extracting URL ({year})"):
+    for txt_file in tqdm(txt_files, desc="Extracting URL"):
         with open(txt_file, "r", encoding="utf-8") as f:
             for line in f:
                 try:
-                    parts = line.strip().split("|")
+                    log_parts = line.strip().split("|")
 
-                    if len(parts) < 4:
+                    if len(log_parts) < 4:
                         continue
 
-                    match = log_id_pattern.search(parts[3])
+                    log_id_match = log_id_pattern.search(log_parts[3])
 
-                    if not match:
+                    if not log_id_match:
                         continue
 
-                    log_id = match.group(1)
-                    time_str = parts[1].strip()
+                    log_id = log_id_match.group(1)
+                    time_str = log_parts[1].strip()
                     date_str = log_id[:8]
 
                     game = {
@@ -61,7 +61,7 @@ def run(year: int):
         return
 
     logging.info("Successfully extracted URLs.")
-    logging.info("Inserting URLs into the database...")
+    logging.info("Inserting URLs into the database ...")
 
     try:
         with get_db_session() as session:
