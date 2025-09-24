@@ -10,7 +10,7 @@ import src.config as config
 
 
 def run(year: int):
-    """Decompress log archive."""
+    """Decompress log archives."""
     zip_filename = config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
     zip_filepath = config.LOG_ZIPS_DIR / zip_filename
     gz_output_dir = config.GZIPPED_LOGS_DIR / str(year)

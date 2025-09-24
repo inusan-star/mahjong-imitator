@@ -1,8 +1,7 @@
 import argparse
 import logging
 
-from src.data.pipeline import download_zips
-from src.data.pipeline import decompress_archives
+from src.data.pipeline import download_zip, decompress_archives, extract_urls
 
 
 def setup_logging():
@@ -19,8 +18,9 @@ def main():
     setup_logging()
 
     pipeline_steps = {
-        "download_zips": download_zips.run,
+        "download_zip": download_zip.run,
         "decompress_archives": decompress_archives.run,
+        "extract_urls": extract_urls.run,
     }
 
     parser = argparse.ArgumentParser(

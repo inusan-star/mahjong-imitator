@@ -21,3 +21,5 @@ TENHO_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Referer": TENHO_RAW_DATA_URL,
 }
+TENHO_LOG_ID_REGEX = r"log=([0-9]{10}gm-[0-9a-f-]+)"
+TENHO_LOG_URL_FORMAT = "http://tenhou.net/0/log/?{log_id}"
