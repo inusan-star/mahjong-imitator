@@ -29,7 +29,7 @@ def run(year: int):
                 member for member in zip_ref.infolist() if member.filename.endswith(".html.gz") and not member.is_dir()
             ]
 
-            for member in tqdm(member_list, desc="Decompressing ZIP"):
+            for member in tqdm(member_list, desc="Decompressing ZIP", unit="file"):
                 basename = pathlib.Path(member.filename).name
                 target_path = gz_output_dir / basename
 
@@ -57,7 +57,7 @@ def run(year: int):
     logging.info("Decompressing *.gz files to '%s' ...", txt_output_dir)
 
     try:
-        for gz_file in tqdm(gz_files, desc="Decompressing GZ"):
+        for gz_file in tqdm(gz_files, desc="Decompressing GZ", unit="file"):
             txt_filename = gz_file.name.replace(".html.gz", ".txt")
             txt_filepath = txt_output_dir / txt_filename
 

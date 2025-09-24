@@ -27,9 +27,8 @@ def run(year: int):
     logging.info("Extracting URLs from *.txt files in '%s' ...", txt_dir)
 
     games_to_insert = []
-    log_id_pattern = re.compile(config.TENHO_LOG_ID_REGEX)
 
-    for txt_file in tqdm(txt_files, desc="Extracting URL"):
+    for txt_file in tqdm(txt_files, desc="Extracting URL", unit="file"):
         with open(txt_file, "r", encoding="utf-8") as f:
             for line in f:
                 try:
@@ -38,18 +37,19 @@ def run(year: int):
                     if len(log_parts) < 4:
                         continue
 
-                    log_id_match = log_id_pattern.search(log_parts[3])
+                    time_str_match = re.match(re.compile(config.TENHO_LOG_TIME_REGEX), log_parts[0].strip())
+                    log_id_match = re.search(re.compile(config.TENHO_LOG_ID_REGEX), log_parts[3].strip())
 
-                    if not log_id_match:
+                    if not time_str_match or not log_id_match:
                         continue
 
+                    time_str = time_str_match.group(0)
                     log_id = log_id_match.group(1)
-                    time_str = log_parts[1].strip()
                     date_str = log_id[:8]
 
                     game = {
                         "log_url": config.TENHO_LOG_URL_FORMAT.format(log_id=log_id),
-                        "played_at": datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H:%M"),
+                        "played_at": datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H:%M"),
                     }
                     games_to_insert.append(game)
 
