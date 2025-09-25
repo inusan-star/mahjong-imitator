@@ -11,7 +11,7 @@ from src.db.session import get_db_session
 
 
 def run(year: int):
-    """Extract log URLs."""
+    """Extract log IDs."""
     txt_dir = config.TEXT_LOGS_DIR / str(year)
 
     if not txt_dir.exists():
@@ -24,11 +24,11 @@ def run(year: int):
         logging.info("No *.txt files found in '%s'. Skipping extraction.", txt_dir)
         return
 
-    logging.info("Extracting URLs from *.txt files in '%s' ...", txt_dir)
+    logging.info("Extracting log IDs from *.txt files in '%s' ...", txt_dir)
 
     games_to_insert = []
 
-    for txt_file in tqdm(txt_files, desc="Extracting URL", unit="file"):
+    for txt_file in tqdm(txt_files, desc="Extracting Log ID", unit="file"):
         with open(txt_file, "r", encoding="utf-8") as f:
             for line in f:
                 try:
@@ -48,7 +48,7 @@ def run(year: int):
                     date_str = log_id[:8]
 
                     game = {
-                        "log_url": config.TENHO_LOG_URL_FORMAT.format(log_id=log_id),
+                        "log_id": log_id,
                         "played_at": datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H:%M"),
                     }
                     games_to_insert.append(game)
@@ -57,19 +57,19 @@ def run(year: int):
                     continue
 
     if not games_to_insert:
-        logging.info("No URLs found in '%s'.", txt_dir)
+        logging.info("No log IDs found in '%s'.", txt_dir)
         return
 
-    logging.info("Successfully extracted URLs.")
-    logging.info("Inserting URLs into the database ...")
+    logging.info("Successfully extracted log IDs.")
+    logging.info("Inserting log IDs into the database ...")
 
     try:
         with get_db_session() as session:
             game_repo = GameRepository(session)
             game_repo.bulk_insert(games_to_insert)
 
-        logging.info("Successfully inserted URLs.")
+        logging.info("Successfully inserted log IDs.")
 
     except SQLAlchemyError as _:
-        logging.error("Failed to insert URLs.")
+        logging.error("Failed to insert log IDs.")
         raise

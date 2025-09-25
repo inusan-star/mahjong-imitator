@@ -13,7 +13,7 @@ class Game(Base):
     __tablename__ = "games"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    log_url = Column(String(100), nullable=False, unique=True)
+    log_id = Column(String(50), nullable=False, unique=True)
     played_at = Column(DateTime, nullable=False)
 
 

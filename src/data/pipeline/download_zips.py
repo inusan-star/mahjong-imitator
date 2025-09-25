@@ -7,7 +7,7 @@ import src.config as config
 
 
 def run(year: int):
-    """Download log zip."""
+    """Download log zips."""
     config.LOG_ZIPS_DIR.mkdir(parents=True, exist_ok=True)
 
     file_name = config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
