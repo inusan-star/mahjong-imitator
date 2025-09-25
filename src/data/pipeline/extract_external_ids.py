@@ -6,12 +6,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
 import src.config as config
-from src.db.game import GameRepository
+from src.db.log import LogRepository
 from src.db.session import get_db_session
 
 
 def run(year: int):
-    """Extract log IDs."""
+    """Extract external IDs."""
     txt_dir = config.TEXT_LOGS_DIR / str(year)
 
     if not txt_dir.exists():
@@ -24,11 +24,11 @@ def run(year: int):
         logging.info("No *.txt files found in '%s'. Skipping extraction.", txt_dir)
         return
 
-    logging.info("Extracting log IDs from *.txt files in '%s' ...", txt_dir)
+    logging.info("Extracting external IDs from *.txt files in '%s' ...", txt_dir)
 
-    games_to_insert = []
+    logs_to_insert = []
 
-    for txt_file in tqdm(txt_files, desc="Extracting Log ID", unit="file"):
+    for txt_file in tqdm(txt_files, desc="Extracting external ID", unit="file"):
         with open(txt_file, "r", encoding="utf-8") as f:
             for line in f:
                 try:
@@ -47,29 +47,29 @@ def run(year: int):
                     log_id = log_id_match.group(1)
                     date_str = log_id[:8]
 
-                    game = {
-                        "log_id": log_id,
+                    log_record = {
+                        "external_id": log_id,
                         "played_at": datetime.strptime(f"{date_str} {time_str}", "%Y%m%d %H:%M"),
                     }
-                    games_to_insert.append(game)
+                    logs_to_insert.append(log_record)
 
                 except (ValueError, IndexError):
                     continue
 
-    if not games_to_insert:
-        logging.info("No log IDs found in '%s'.", txt_dir)
+    if not logs_to_insert:
+        logging.info("No external IDs found in '%s'.", txt_dir)
         return
 
-    logging.info("Successfully extracted log IDs.")
-    logging.info("Inserting log IDs into the database ...")
+    logging.info("Successfully extracted external IDs.")
+    logging.info("Inserting external IDs into the database ...")
 
     try:
         with get_db_session() as session:
-            game_repo = GameRepository(session)
-            game_repo.bulk_insert(games_to_insert)
+            log_repo = LogRepository(session)
+            log_repo.bulk_insert(logs_to_insert)
 
-        logging.info("Successfully inserted log IDs.")
+        logging.info("Successfully inserted external IDs.")
 
     except SQLAlchemyError as _:
-        logging.error("Failed to insert log IDs.")
+        logging.error("Failed to insert external IDs.")
         raise
