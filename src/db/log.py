@@ -13,7 +13,7 @@ class Log(Base):
     __tablename__ = "logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    external_id = Column(String(50), nullable=False, unique=True)
+    source_id = Column(String(50), nullable=False, unique=True)
     played_at = Column(DateTime, nullable=False)
 
     game = relationship("Game", back_populates="log", uselist=False)

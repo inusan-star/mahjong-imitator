@@ -5,7 +5,7 @@ import warnings
 from rich.logging import RichHandler
 from tqdm import TqdmExperimentalWarning
 
-from src.data.pipeline import download_zips, decompress_archives, extract_external_ids
+from src.data.pipeline import download_zips, decompress_archives, extract_source_ids
 
 
 def setup_logging():
@@ -30,7 +30,7 @@ def main():
     pipeline_steps = {
         "download_zips": download_zips.run,
         "decompress_archives": decompress_archives.run,
-        "extract_external_ids": extract_external_ids.run,
+        "extract_source_ids": extract_source_ids.run,
     }
 
     parser = argparse.ArgumentParser(
