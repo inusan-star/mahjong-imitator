@@ -1,4 +1,6 @@
 import logging
+import random
+import time
 
 import requests
 from tqdm.rich import tqdm
@@ -21,6 +23,7 @@ def run(year: int):
     logging.info("Downloading '%s' from %s ...", file_name, url)
 
     try:
+        time.sleep(random.uniform(config.REQUEST_SLEEP_MIN, config.REQUEST_SLEEP_MAX))
         response = requests.get(url, headers=config.TENHO_HEADERS, stream=True, timeout=config.REQUESTS_TIMEOUT)
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))

@@ -57,19 +57,17 @@ def run(year: int):
                     continue
 
     if not logs_to_insert:
-        logging.info("No source IDs found in '%s'.", txt_dir)
+        logging.info("No source IDs found in '%s'. Skipping insertion.", txt_dir)
         return
 
     logging.info("Successfully extracted source IDs.")
     logging.info("Inserting logs into the database ...")
 
-    try:
-        with get_db_session() as session:
-            log_repo = LogRepository(session)
+    with get_db_session() as session:
+        log_repo = LogRepository(session)
+        try:
             log_repo.bulk_insert(logs_to_insert)
-
-        logging.info("Successfully inserted logs.")
-
-    except SQLAlchemyError as _:
-        logging.error("Failed to insert logs.")
-        raise
+            logging.info("Successfully inserted logs.")
+        except SQLAlchemyError as _:
+            logging.error("Failed to insert logs.")
+            raise
