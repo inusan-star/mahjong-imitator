@@ -1,5 +1,10 @@
 FROM python:3.9-slim
 
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ENV http_proxy=${HTTP_PROXY}
+ENV https_proxy=${HTTPS_PROXY}
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
@@ -21,3 +26,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user:user . .
 RUN pip install -e .
+
+ENV http_proxy=""
+ENV https_proxy=""
