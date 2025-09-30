@@ -17,7 +17,6 @@ services:
       - "${APP_PORT}:8000"
     volumes:
       - .:/app
-      - mahjong_imitator_app_data:/app/data
     env_file:
       - .env
 
@@ -33,7 +32,7 @@ services:
     ports:
       - "${DB_PORT}:3306"
     volumes:
-      - mahjong_imitator_db_data:/var/lib/mysql
+      - mahjong_imitator_data:/var/lib/mysql
 
   flyway:
     image: flyway/flyway:11.9
@@ -50,7 +49,5 @@ services:
       - db
 
 volumes:
-  mahjong_imitator_app_data:
-    driver: local
-  mahjong_imitator_db_data:
+  mahjong_imitator_data:
     driver: local
