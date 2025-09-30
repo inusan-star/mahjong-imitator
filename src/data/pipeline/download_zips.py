@@ -17,7 +17,7 @@ def run(year: int):
     url = config.TENHO_LOG_ZIP_URL_FORMAT.format(year=year)
 
     if file_path.exists():
-        logging.info("File '%s' already exists. Skipping download.", file_name)
+        logging.info("File '%s' already exists. Skipping.", file_name)
         return
 
     logging.info("Downloading '%s' from %s ...", file_name, url)
@@ -29,7 +29,7 @@ def run(year: int):
         total_size = int(response.headers.get("content-length", 0))
 
         with open(file_path, "wb") as f, tqdm(
-            desc="Downloading ZIP",
+            desc="Downloading",
             total=total_size,
             unit="iB",
             unit_scale=True,
@@ -41,8 +41,8 @@ def run(year: int):
 
         logging.info("Successfully downloaded '%s'.", file_name)
 
-    except requests.exceptions.RequestException as _:
-        logging.error("Failed to download '%s'. Cleaning up.", file_name)
+    except requests.exceptions.RequestException:
+        logging.error("Failed to download '%s'. Cleaning up. Halting.", file_name)
 
         if file_path.exists():
             file_path.unlink()

@@ -16,7 +16,7 @@ def run(year: int):
     gz_output_dir = config.GZIPPED_LOGS_DIR / str(year)
 
     if not zip_filepath.exists():
-        logging.info("File '%s' not found. Skipping decompression.", zip_filename)
+        logging.info("File '%s' not found. Skipping.", zip_filename)
         return
 
     gz_output_dir.mkdir(parents=True, exist_ok=True)
@@ -29,7 +29,7 @@ def run(year: int):
                 member for member in zip_ref.infolist() if member.filename.endswith(".html.gz") and not member.is_dir()
             ]
 
-            for member in tqdm(member_list, desc="Decompressing ZIP", unit="file"):
+            for member in tqdm(member_list, desc="Decompressing", unit="file"):
                 basename = pathlib.Path(member.filename).name
                 target_path = gz_output_dir / basename
 
@@ -41,15 +41,15 @@ def run(year: int):
 
         logging.info("Successfully decompressed '%s'.", zip_filename)
 
-    except zipfile.BadZipFile as _:
-        logging.error("Failed to decompress '%s'.", zip_filename)
+    except zipfile.BadZipFile:
+        logging.error("Failed to decompress '%s'. Halting.", zip_filename)
         raise
 
     txt_output_dir = config.TEXT_LOGS_DIR / str(year)
     gz_files = sorted(list(gz_output_dir.glob("*.html.gz")))
 
     if not gz_files:
-        logging.info("No *.gz files found in '%s'. Skipping decompression.", gz_output_dir)
+        logging.info("No *.gz files found in '%s'. Skipping.", gz_output_dir)
         return
 
     txt_output_dir.mkdir(parents=True, exist_ok=True)
@@ -57,7 +57,7 @@ def run(year: int):
     logging.info("Decompressing *.gz files to '%s' ...", txt_output_dir)
 
     try:
-        for gz_file in tqdm(gz_files, desc="Decompressing GZ", unit="file"):
+        for gz_file in tqdm(gz_files, desc="Decompressing", unit="file"):
             txt_filename = gz_file.name.replace(".html.gz", ".txt")
             txt_filepath = txt_output_dir / txt_filename
 
@@ -69,6 +69,6 @@ def run(year: int):
 
         logging.info("Successfully decompressed *.gz files.")
 
-    except gzip.BadGzipFile as _:
-        logging.error("Failed to decompress *.gz files.")
+    except gzip.BadGzipFile:
+        logging.error("Failed to decompress *.gz files. Halting.")
         raise

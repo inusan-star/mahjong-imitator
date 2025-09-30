@@ -1,5 +1,5 @@
 [project]
-name = "mahjong_imitator"
+name = "mahjong-imitator"
 version = "0.1.0"
 
 [tool.setuptools]

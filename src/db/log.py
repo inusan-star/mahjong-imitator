@@ -1,9 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.orm import Session, relationship
-from tqdm.rich import tqdm
 
-import src.config as config
 from src.db import Base
 
 
@@ -27,7 +25,6 @@ class LogRepository:
     def __init__(self, session: Session):
         self._model = Log
         self._session = session
-        self._batch_size = config.DB_BATCH_SIZE
 
     def find(self, *filters) -> list[Log]:
         """Find."""
@@ -43,25 +40,13 @@ class LogRepository:
         if not records:
             return 0
 
-        total_inserted = 0
-
-        with tqdm(total=len(records), desc="Inserting LOG", unit="rec") as progress_bar:
-            for i in range(0, len(records), self._batch_size):
-                batch_records = records[i : i + self._batch_size]
-                statement = mysql_insert(self._model).values(batch_records).prefix_with("IGNORE")
-                result = self._session.execute(statement)
-                total_inserted += result.rowcount
-                progress_bar.update(len(batch_records))
-
-        return total_inserted
+        statement = mysql_insert(self._model).values(records).prefix_with("IGNORE")
+        result = self._session.execute(statement)
+        return result.rowcount
 
     def bulk_update(self, updates: list[dict]):
         """Bulk update."""
         if not updates:
             return
 
-        with tqdm(total=len(updates), desc="Updating LOG", unit="rec") as progress_bar:
-            for i in range(0, len(updates), self._batch_size):
-                batch_records = updates[i : i + self._batch_size]
-                self._session.bulk_update_mappings(self._model, batch_records)
-                progress_bar.update(len(batch_records))
+        self._session.bulk_update_mappings(self._model, updates)
