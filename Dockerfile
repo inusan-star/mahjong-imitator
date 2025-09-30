@@ -26,6 +26,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user:user . .
 RUN pip install -e .
-
-ENV http_proxy=""
-ENV https_proxy=""
