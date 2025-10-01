@@ -39,7 +39,8 @@ def run(year: int):
             Log.mjlog_status == 0,
             extract("year", Log.played_at) == year,
         )
-        logs_to_fetch = [(log.id, log.source_id) for log in log_repo.find(*filters)]
+        logs = log_repo.find(*filters, order_by=[Log.played_at.asc()])
+        logs_to_fetch = [(log.id, log.source_id) for log in logs]
 
     if not logs_to_fetch:
         logging.info("No unprocessed logs found from database. Skipping.")

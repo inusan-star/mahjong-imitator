@@ -26,12 +26,15 @@ class LogRepository:
         self._model = Log
         self._session = session
 
-    def find(self, *filters) -> list[Log]:
+    def find(self, *filters, order_by: list = None) -> list[Log]:
         """Find."""
         query = self._session.query(self._model)
 
         if filters:
             query = query.filter(*filters)
+
+        if order_by:
+            query = query.order_by(*order_by)
 
         return query.all()
 
