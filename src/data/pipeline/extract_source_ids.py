@@ -68,7 +68,7 @@ def run(year: int):
                     logs_to_insert.append(log_record)
 
         except (OSError, ValueError, IndexError):
-            logging.warning("Failed to extract source IDs. Skipping. File: %s", txt_file)
+            logging.error("Failed to extract source IDs. Skipping. File: %s", txt_file)
             continue
 
         if len(logs_to_insert) >= config.DB_BATCH_SIZE or (txt_file == txt_files[-1] and logs_to_insert):

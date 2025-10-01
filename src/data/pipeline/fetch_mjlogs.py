@@ -74,7 +74,7 @@ def run(year: int):
             log_to_update["mjlog_file_path"] = str(relative_path)
 
         except requests.exceptions.RequestException:
-            logging.warning("Failed to fetch mjlog. Source ID: %s", source_id)
+            logging.error("Failed to fetch mjlog. Source ID: %s", source_id)
 
         log_to_updates.append(log_to_update)
 
