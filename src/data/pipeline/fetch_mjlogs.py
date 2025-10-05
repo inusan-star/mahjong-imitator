@@ -2,7 +2,6 @@ import logging
 import random
 import requests
 import time
-import xml.dom.minidom
 
 from sqlalchemy import extract
 from sqlalchemy.exc import SQLAlchemyError
@@ -53,7 +52,7 @@ def run(year: int):
 
     log_to_updates = []
 
-    for (log_id, source_id) in tqdm(logs_to_fetch, desc="Fetching & Updating", unit="log"):
+    for log_id, source_id in tqdm(logs_to_fetch, desc="Fetching & Updating", unit="log"):
         url = config.TENHO_LOG_URL_FORMAT.format(source_id=source_id)
         mjlog_filename = config.TENHO_MJLOG_FILENAME_FORMAT.format(source_id=source_id)
         mjlog_filepath = mjlog_output_dir / mjlog_filename
@@ -66,10 +65,8 @@ def run(year: int):
             response = requests.get(url, headers=config.TENHO_HEADERS, timeout=config.REQUESTS_TIMEOUT)
             response.raise_for_status()
 
-            formatted_mjlog = xml.dom.minidom.parseString(response.content).toprettyxml(indent="  ")
-
             with open(mjlog_filepath, "wb") as f:
-                f.write(formatted_mjlog.encode("utf-8"))
+                f.write(response.content)
 
             log_to_update["mjlog_status"] = 1
             log_to_update["mjlog_file_path"] = str(relative_path)
