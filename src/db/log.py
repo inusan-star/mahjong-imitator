@@ -1,6 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.dialects.mysql import insert as mysql_insert
-from sqlalchemy.orm import Session, relationship
+from sqlalchemy.orm import Mapper, Session, relationship
+from typing import Any, cast, Optional
 
 from src.db import Base
 
@@ -26,7 +27,7 @@ class LogRepository:
         self._model = Log
         self._session = session
 
-    def find(self, *filters, order_by: list = None) -> list[Log]:
+    def find(self, *filters, order_by: Optional[list[Any]] = None) -> list[Log]:
         """Find."""
         query = self._session.query(self._model)
 
@@ -52,4 +53,4 @@ class LogRepository:
         if not updates:
             return
 
-        self._session.bulk_update_mappings(self._model, updates)
+        self._session.bulk_update_mappings(cast(Mapper[Any], self._model), updates)
