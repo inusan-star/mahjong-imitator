@@ -7,22 +7,14 @@ ENV https_proxy=${HTTPS_PROXY}
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential \
-    git \
-    gosu \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential git && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools wheel
 
-ARG UID
-ARG GID
-RUN if ! getent group $GID > /dev/null; then groupadd -g $GID user; fi && \
-    useradd -u $UID -g $GID -m user
-
 RUN git clone -b mahjong-imitator --single-branch https://github.com/inusan-star/mjx-convert.git /mjx-convert
 WORKDIR /mjx-convert
-RUN make install
-RUN pip install .
+RUN make install && pip install .
 
 WORKDIR /app
 COPY requirements.txt .
@@ -30,7 +22,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN pip install -e .
 
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["bash"]
-
-USER user
+ENTRYPOINT ["bash"]

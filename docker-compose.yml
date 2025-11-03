@@ -3,8 +3,6 @@ services:
     build:
       context: .
       args:
-        UID: ${UID}
-        GID: ${GID}
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
     user: root
