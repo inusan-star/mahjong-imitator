@@ -19,6 +19,7 @@ def _bulk_insert_logs(logs: list[dict]):
         with get_db_session() as session:
             log_repo = LogRepository(session)
             log_repo.bulk_insert(logs)
+
     except SQLAlchemyError:
         logging.error("Failed to insert logs. Halting.")
         raise

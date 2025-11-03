@@ -16,6 +16,8 @@ class Log(Base):
     played_at = Column(DateTime, nullable=False)
     mjlog_status = Column(Integer, nullable=False, default=0)
     mjlog_file_path = Column(String(255), nullable=True, default=None)
+    json_status = Column(Integer, nullable=False, default=0)
+    json_file_path = Column(String(255), nullable=True, default=None)
 
     game = relationship("Game", back_populates="log", uselist=False)
 
@@ -27,7 +29,7 @@ class LogRepository:
         self._model = Log
         self._session = session
 
-    def find(self, *filters, order_by: Optional[list[Any]] = None) -> list[Log]:
+    def find(self, *filters, order_by: Optional[list[Any]] = None):
         """Find."""
         query = self._session.query(self._model)
 
@@ -39,7 +41,7 @@ class LogRepository:
 
         return query.all()
 
-    def bulk_insert(self, records: list[dict]) -> int:
+    def bulk_insert(self, records: list[dict]):
         """Bulk insert."""
         if not records:
             return 0

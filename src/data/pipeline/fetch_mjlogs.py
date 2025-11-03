@@ -21,6 +21,7 @@ def _bulk_update_logs(logs: list[dict]):
         with get_db_session() as session:
             log_repo = LogRepository(session)
             log_repo.bulk_update(logs)
+
     except SQLAlchemyError:
         logging.error("Failed to update logs. Halting.")
         raise
@@ -54,8 +55,7 @@ def run(year: int):
 
     for log_id, source_id in tqdm(logs_to_fetch, desc="Fetching & Updating", unit="log"):
         url = config.TENHO_LOG_URL_FORMAT.format(source_id=source_id)
-        mjlog_filename = config.TENHO_MJLOG_FILENAME_FORMAT.format(source_id=source_id)
-        mjlog_filepath = mjlog_output_dir / mjlog_filename
+        mjlog_filepath = mjlog_output_dir / f"{source_id}.mjlog"
         relative_path = mjlog_filepath.relative_to(config.PROJECT_ROOT)
 
         log_to_update = {"id": log_id, "mjlog_status": 2}

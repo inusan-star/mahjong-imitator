@@ -4,6 +4,7 @@ DB_BATCH_SIZE = 1000
 REQUESTS_TIMEOUT = 30
 REQUEST_SLEEP_MIN = 0.5
 REQUEST_SLEEP_MAX = 1.5
+SUBPROCESS_TIMEOUT = 30
 
 _CONFIG_FILEPATH = Path(__file__).resolve()
 SRC_ROOT = _CONFIG_FILEPATH.parent
@@ -17,6 +18,7 @@ LOG_ZIPS_DIR = RAW_DATA_DIR / "log_zips"
 GZIPPED_LOGS_DIR = INTERIM_DATA_DIR / "gzipped_logs"
 TEXT_LOGS_DIR = INTERIM_DATA_DIR / "text_logs"
 MJLOGS_DIR = INTERIM_DATA_DIR / "mjlogs"
+JSON_LOGS_DIR = INTERIM_DATA_DIR / "json_logs"
 
 TENHO_RAW_DATA_URL = "https://tenhou.net/sc/raw/"
 TENHO_LOG_ZIP_FILENAME_FORMAT = "scraw{year}.zip"
@@ -28,4 +30,3 @@ TENHO_HEADERS = {
 TENHO_LOG_TIME_REGEX = r"^\d{2}:\d{2}$"
 TENHO_LOG_ID_REGEX = r"log=([0-9]{10}gm-[0-9a-f-]+)"
 TENHO_LOG_URL_FORMAT = "http://tenhou.net/0/log/?{source_id}"
-TENHO_MJLOG_FILENAME_FORMAT = "{source_id}.mjlog"
