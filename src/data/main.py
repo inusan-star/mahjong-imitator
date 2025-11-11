@@ -50,13 +50,21 @@ def main():
         type=str,
         choices=pipeline_steps.keys(),
         default=list(pipeline_steps.keys())[0],
-        help="The step to start the pipeline from",
+        help="The step to start from",
+    )
+    parser.add_argument(
+        "--only-step",
+        type=str,
+        choices=pipeline_steps.keys(),
+        help="The single step to run",
     )
     args = parser.parse_args()
 
     all_step_names = list(pipeline_steps.keys())
-    start_step_index = all_step_names.index(args.from_step)
-    steps_to_run = {name: pipeline_steps[name] for name in all_step_names[start_step_index:]}
+    start_step = args.only_step if args.only_step else args.from_step
+    start_step_index = all_step_names.index(start_step)
+    end_step_index = start_step_index + 1 if args.only_step else len(all_step_names)
+    steps_to_run = {name: pipeline_steps[name] for name in all_step_names[start_step_index:end_step_index]}
 
     for year in args.years:
         logging.info("🀄🀄🀄 Starting data collection pipeline for year: %s 🀄🀄🀄", year)
