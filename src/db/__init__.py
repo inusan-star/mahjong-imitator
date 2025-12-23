@@ -6,4 +6,6 @@ class Base(DeclarativeBase):
 
 
 from src.db.game import Game
+from src.db.game_player import GamePlayer
 from src.db.log import Log
+from src.db.player import Player

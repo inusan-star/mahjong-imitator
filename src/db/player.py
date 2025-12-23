@@ -1,32 +1,36 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Float, Integer, String
 from sqlalchemy.dialects.mysql import insert as mysql_insert
-from sqlalchemy.orm import Mapper, Session, relationship
+from sqlalchemy.orm import Mapped, mapped_column, Mapper, Session
 from typing import Any, cast, Optional
 
 from src.db import Base
 
 
-class Log(Base):
-    """Log table model."""
+class Player(Base):
+    """Player table model."""
 
-    __tablename__ = "logs"
+    __tablename__ = "players"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    source_id = Column(String(50), nullable=False, unique=True)
-    played_at = Column(DateTime, nullable=False)
-    mjlog_status = Column(Integer, nullable=False, default=0)
-    mjlog_file_path = Column(String(255), nullable=True, default=None)
-    json_status = Column(Integer, nullable=False, default=0)
-    json_file_path = Column(String(255), nullable=True, default=None)
+    name = Column(String(255), nullable=False, unique=True)
+    gender = Column(String(10), nullable=False)
+    last_dan = Column(Integer, nullable=False)
+    last_rate = Column(Float, nullable=False)
+    max_dan = Column(Integer, nullable=False)
+    max_rate = Column(Float, nullable=False)
+    last_played_at = Column(DateTime, nullable=False)
+    game_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    first_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    second_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    third_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    fourth_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    game = relationship("Game", back_populates="log", uselist=False)
 
-
-class LogRepository:
-    """Log repository."""
+class PlayerRepository:
+    """Player repository."""
 
     def __init__(self, session: Session):
-        self._model = Log
+        self._model = Player
         self._session = session
 
     def find(

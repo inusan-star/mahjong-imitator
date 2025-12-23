@@ -5,7 +5,14 @@ import warnings
 from rich.logging import RichHandler
 from tqdm import TqdmExperimentalWarning
 
-from src.data.pipeline import download_zips, decompress_archives, extract_source_ids, fetch_mjlogs, convert_to_json
+from src.data.pipeline import (
+    download_zips,
+    decompress_archives,
+    extract_source_ids,
+    fetch_mjlogs,
+    convert_to_json,
+    parse_mjlogs,
+)
 
 
 def setup_logging():
@@ -33,6 +40,7 @@ def main():
         "extract_source_ids": extract_source_ids.run,
         "fetch_mjlogs": fetch_mjlogs.run,
         "convert_to_json": convert_to_json.run,
+        "parse_mjlogs": parse_mjlogs.run,
     }
 
     parser = argparse.ArgumentParser(

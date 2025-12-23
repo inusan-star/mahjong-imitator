@@ -11,5 +11,7 @@ class Game(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     log_id = Column(Integer, ForeignKey("logs.id"), nullable=False, unique=True)
+    game_type = Column(Integer, nullable=False)
+    lobby_id = Column(Integer, nullable=False)
 
     log = relationship("Log", back_populates="game")
