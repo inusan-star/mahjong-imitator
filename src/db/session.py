@@ -27,8 +27,10 @@ def get_db_session():
     try:
         yield session
         session.commit()
+
     except Exception:
         session.rollback()
         raise
+
     finally:
         session.close()

@@ -57,6 +57,7 @@ class LogRepository:
 
         statement = mysql_insert(self._model).values(records).prefix_with("IGNORE")
         result = self._session.execute(statement)
+
         return result.rowcount
 
     def bulk_update(self, updates: list[dict]):

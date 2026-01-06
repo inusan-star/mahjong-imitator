@@ -61,6 +61,7 @@ def run(year: int):
         try:
             try:
                 mjlog_text = (config.PROJECT_ROOT / mjlog_file_path).read_text(encoding="shift_jis")
+
             except UnicodeDecodeError:
                 mjlog_text = (config.PROJECT_ROOT / mjlog_file_path).read_text(encoding="utf-8")
 
