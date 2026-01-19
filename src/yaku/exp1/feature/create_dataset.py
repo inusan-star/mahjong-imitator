@@ -120,7 +120,8 @@ def run():
                     round_count += 1
 
                     decisions = [
-                        (obs, act) for obs, act in state.past_decisions()
+                        (obs, act)
+                        for obs, act in state.past_decisions()
                         if obs.who() == win.who and act.type() in [mjx.ActionType.DISCARD, mjx.ActionType.TSUMOGIRI]
                     ]
 
