@@ -1,5 +1,7 @@
+from datetime import datetime
 import logging
 from pathlib import Path
+import random
 import warnings
 
 import mjx
@@ -44,6 +46,8 @@ def _save_batch(batch_count: int, input_history: list, output_history: list, par
 
 def run():
     """Create yaku prediction dataset."""
+    random.seed(yaku_config.SEED)
+    np.random.seed(yaku_config.SEED)
     input_history, output_history = [], []
     game_count, round_count, batch_count, data_count = 0, 0, 0, 0
     last_processed_at = None
@@ -61,6 +65,7 @@ def run():
         logs = (
             session.query(Log)
             .filter(Log.json_status == 1)
+            .filter(Log.played_at >= datetime(yaku_config.START_YEAR, 1, 1))
             .order_by(Log.played_at.asc())
             .all()
         )
@@ -114,13 +119,18 @@ def run():
 
                     round_count += 1
 
-                    for obs, act in state.past_decisions():
-                        if obs.who() != win.who:
-                            continue
+                    decisions = [
+                        (obs, act) for obs, act in state.past_decisions()
+                        if obs.who() == win.who and act.type() in [mjx.ActionType.DISCARD, mjx.ActionType.TSUMOGIRI]
+                    ]
 
-                        if act.type() not in [mjx.ActionType.DISCARD, mjx.ActionType.TSUMOGIRI]:
-                            continue
+                    if not decisions:
+                        continue
 
+                    if batch_count >= yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT:
+                        decisions = [random.choice(decisions)]
+
+                    for obs, _ in decisions:
                         input_history.append(obs_encoder.encode(obs))
                         output_history.append(yaku_vector)
                         data_count += 1
