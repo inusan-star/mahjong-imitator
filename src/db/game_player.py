@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Float, ForeignKey, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Session
+from typing import Any, Optional
 
 from src.db import Base
 
@@ -20,3 +21,32 @@ class GamePlayer(Base):
 
     game = relationship("Game")
     player = relationship("Player")
+
+
+class GamePlayerRepository:
+    """GamePlayer repository."""
+
+    def __init__(self, session: Session):
+        self._model = GamePlayer
+        self._session = session
+
+    def find(
+        self,
+        *filters,
+        order_by: Optional[list[Any]] = None,
+        outer_joins: Optional[list[Any]] = None,
+    ):
+        """Find."""
+        query = self._session.query(self._model)
+
+        if outer_joins:
+            for join_table in outer_joins:
+                query = query.outerjoin(join_table)
+
+        if filters:
+            query = query.filter(*filters)
+
+        if order_by:
+            query = query.order_by(*order_by)
+
+        return query.all()
