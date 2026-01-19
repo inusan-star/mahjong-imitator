@@ -18,3 +18,9 @@ Run the application and database containers.
 docker compose up -d --build
 docker compose exec app bash
 ```
+
+### 3. Commands
+
+```
+python -m src.yaku.exp1.feature.create_dataset
+```
