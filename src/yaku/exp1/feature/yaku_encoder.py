@@ -1,6 +1,11 @@
+import logging
 from typing import Optional
 
 import numpy as np
+from sqlalchemy.exc import SQLAlchemyError
+
+from src.db.session import get_db_session
+from src.db.yaku import Yaku, YakuRepository
 
 
 class YakuEncoder:
@@ -20,16 +25,33 @@ class YakuEncoder:
             "ドラ",
         ]
 
-        self.name_to_index = {name: i for i, name in enumerate(self.yaku_name)}
+        name_to_idx = {name: i for i, name in enumerate(self.yaku_name)}
+        self.id_to_index = {}
+
+        try:
+            with get_db_session() as session:
+                yaku_repo = YakuRepository(session)
+                all_yaku = yaku_repo.find()
+
+                for yaku in all_yaku:
+                    if yaku.name in name_to_idx:
+                        self.id_to_index[yaku.id] = name_to_idx[yaku.name]
+
+        except SQLAlchemyError:
+            logging.error("Failed to initialize yaku mapping from database.")
+            raise
+
         self.num_yaku = len(self.yaku_name)
 
-    def encode(self, yaku_list: list[str]) -> np.ndarray:
+        logging.info(f"Initialized YakuEncoder with {len(self.id_to_index)} yaku IDs from database.")
+
+    def encode(self, yaku_ids: list[int]) -> np.ndarray:
         """Encode yaku list to vector."""
         vector = np.zeros(self.num_yaku, dtype=np.float32)
 
-        for name in yaku_list:
-            if name in self.name_to_index:
-                index = self.name_to_index[name]
+        for yaku_id in yaku_ids:
+            if yaku_id in self.id_to_index:
+                index = self.id_to_index[yaku_id]
                 vector[index] = 1.0
 
         return vector
