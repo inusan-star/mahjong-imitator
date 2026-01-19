@@ -2,23 +2,20 @@ import logging
 from pathlib import Path
 import warnings
 
+import mjx
 from mjx import State
 import numpy as np
 from rich.logging import RichHandler
-from sqlalchemy.orm import joinedload
 from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
 
 import src.config as global_config
-from src.db.game import Game
-from src.db.game_player import GamePlayer, GamePlayerRepository
 from src.db.log import Log
-from src.db.player import Player, PlayerRepository
 from src.db.session import get_db_session
 
-from src.yaku import config as yaku_config
-from src.yaku.feature.obs_encoder import ObservationEncoder
-from src.yaku.feature.yaku_encoder import YakuEncoder
+from src.yaku.exp1 import config as yaku_config
+from src.yaku.exp1.feature.obs_encoder import ObservationEncoder
+from src.yaku.exp1.feature.yaku_encoder import YakuEncoder
 
 
 def setup_logging():
@@ -51,7 +48,7 @@ def run():
     game_count, round_count, batch_count, data_count = 0, 0, 0, 0
     last_processed_at = None
 
-    for parent_dir in [yaku_config.TRAIN_DIR, yaku_config.VALID_DIR]:
+    for parent_dir in [yaku_config.TRAIN_DIR, yaku_config.VALID_DIR, yaku_config.TEST_DIR]:
         (parent_dir / yaku_config.INPUT_NAME).mkdir(parents=True, exist_ok=True)
         (parent_dir / yaku_config.OUTPUT_NAME).mkdir(parents=True, exist_ok=True)
 
@@ -59,36 +56,22 @@ def run():
     yaku_encoder = YakuEncoder()
 
     with get_db_session() as session:
-        target_filter = Player.game_count < yaku_config.MAX_PLAYER_GAME_COUNT
-
-        logging.info("Finding target players.")
-
-        player_repo = PlayerRepository(session)
-        target_players = player_repo.find(target_filter)
-        target_player_ids = {player.id for player in target_players}
-
-        logging.info("Finding logs for target players.")
+        logging.info("Finding logs from database.")
 
         logs = (
             session.query(Log)
-            .options(joinedload(Log.game))
-            .join(Game, Game.log_id == Log.id)
-            .join(GamePlayer, GamePlayer.game_id == Game.id)
-            .join(Player, Player.id == GamePlayer.player_id)
             .filter(Log.json_status == 1)
-            .filter(target_filter)
-            .distinct()
             .order_by(Log.played_at.asc())
             .all()
         )
 
         session.expunge_all()
 
-    if not target_player_ids or not logs:
-        logging.info("No players or logs found. Skipping.")
+    if not logs:
+        logging.info("No logs found. Skipping.")
         return
 
-    target_batch_total = yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT
+    target_batch_total = yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT + yaku_config.TEST_BATCH_COUNT
     total_target = yaku_config.TARGET_BATCH_SIZE * target_batch_total
 
     logging.info("Starting dataset creation.")
@@ -105,11 +88,6 @@ def run():
 
             game_count += 1
             last_processed_at = log.played_at
-
-            with get_db_session() as session:
-                game_player_repo = GamePlayerRepository(session)
-                game_players = game_player_repo.find(GamePlayer.game_id == log.game.id)
-                seat_to_player = {game_player.seat_index: game_player.player_id for game_player in game_players}
 
             try:
                 with open(json_path, "r", encoding="utf-8") as f:
@@ -129,14 +107,18 @@ def run():
                     continue
 
                 for win in terminal.wins:
-                    if seat_to_player.get(win.who) not in target_player_ids:
+                    yaku_vector = yaku_encoder.encode(win.yakus)
+
+                    if np.sum(yaku_vector) == 0:
                         continue
 
                     round_count += 1
-                    yaku_vector = yaku_encoder.encode(win.yakus)
 
-                    for obs, _ in state.past_decisions():
+                    for obs, act in state.past_decisions():
                         if obs.who() != win.who:
+                            continue
+
+                        if act.type() not in [mjx.ActionType.DISCARD, mjx.ActionType.TSUMOGIRI]:
                             continue
 
                         input_history.append(obs_encoder.encode(obs))
@@ -150,14 +132,17 @@ def run():
                             if batch_count <= yaku_config.TRAIN_BATCH_COUNT:
                                 target_dir = yaku_config.TRAIN_DIR
 
-                            else:
+                            elif batch_count <= yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT:
                                 target_dir = yaku_config.VALID_DIR
+
+                            else:
+                                target_dir = yaku_config.TEST_DIR
 
                             _save_batch(batch_count, input_history, output_history, target_dir)
                             input_history.clear()
                             output_history.clear()
 
-                            if batch_count >= (yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT):
+                            if batch_count >= target_batch_total:
                                 break
 
     logging.info(

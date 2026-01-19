@@ -1,11 +1,6 @@
-import logging
 from typing import Optional
 
 import numpy as np
-from sqlalchemy.exc import SQLAlchemyError
-
-from src.db.session import get_db_session
-from src.db.yaku import Yaku, YakuRepository
 
 
 class YakuEncoder:
@@ -13,21 +8,23 @@ class YakuEncoder:
 
     def __init__(self):
         """Initialize yaku encoder."""
-        try:
-            with get_db_session() as session:
-                yaku_repo = YakuRepository(session)
-                yaku_list = yaku_repo.find(Yaku.is_yakuman.is_(False), order_by=[Yaku.id.asc()])
-                self.yaku_name = [yaku.name for yaku in yaku_list]
-
-        except SQLAlchemyError:
-            logging.error("Failed to initialize yaku names from database. Halting.")
-            raise
+        self.yaku_name = [
+            "立直",
+            "断幺九",
+            "場風 東",
+            "場風 北",
+            "役牌 白",
+            "役牌 發",
+            "役牌 中",
+            "混一色",
+            "ドラ",
+        ]
 
         self.name_to_index = {name: i for i, name in enumerate(self.yaku_name)}
         self.num_yaku = len(self.yaku_name)
 
     def encode(self, yaku_list: list[str]) -> np.ndarray:
-        """Encode yaku list to one-hot vector."""
+        """Encode yaku list to vector."""
         vector = np.zeros(self.num_yaku, dtype=np.float32)
 
         for name in yaku_list:

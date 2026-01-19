@@ -1,7 +1,7 @@
 import mjx
 import numpy as np
 
-from src.yaku import config as yaku_config
+from src.yaku.exp1 import config as yaku_config
 
 
 class ObservationEncoder:
