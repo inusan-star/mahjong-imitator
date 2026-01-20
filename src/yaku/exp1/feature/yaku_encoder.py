@@ -43,7 +43,7 @@ class YakuEncoder:
 
         self.num_yaku = len(self.yaku_name)
 
-        logging.info(f"Initialized YakuEncoder with {len(self.id_to_index)} yaku IDs from database.")
+        logging.info("Initialized YakuEncoder with %d yaku IDs from database.", len(self.id_to_index))
 
     def encode(self, yaku_ids: list[int]) -> np.ndarray:
         """Encode yaku list to vector."""

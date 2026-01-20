@@ -1,5 +1,9 @@
 from src.config import PROCESSED_DATA_DIR
 
+# --- WandB settings ---
+PROJECT_NAME = "yaku"
+GROUP_NAME = "exp1"
+
 # --- Directory settings ---
 YAKU_DIR = PROCESSED_DATA_DIR / "yaku" / "exp1"
 

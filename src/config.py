@@ -12,6 +12,8 @@ _CONFIG_FILEPATH = Path(__file__).resolve()
 SRC_ROOT = _CONFIG_FILEPATH.parent
 PROJECT_ROOT = SRC_ROOT.parent
 
+MODEL_DIR = PROJECT_ROOT / "models"
+
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
@@ -39,3 +41,6 @@ TENHO_LOG_URL_FORMAT = "http://tenhou.net/0/log/?{source_id}"
 MJLOG_GO_REGEX = r'<GO\s+type="(\d+)"\s+lobby="(\d+)"[^>]*/>'
 MJLOG_UN_REGEX = r'<UN\s+n0="([^"]+)"\s+n1="([^"]+)"\s+n2="([^"]+)"\s+n3="([^"]+)"\s+dan="([^"]+)"\s+rate="([^"]+)"\s+sx="([^"]+)"[^>]*/>'
 MJLOG_OWARI_REGEX = r'owari="(.*?)"'
+
+# ---- WandB Settings ----
+ENTITY_NAME = "mahjong-imitator"
