@@ -4,6 +4,9 @@
 # Environment file
 .env
 
+# Model files
+/models
+
 # Mypy cache files
 .mypy_cache/
 
