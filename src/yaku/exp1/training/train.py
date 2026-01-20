@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 import logging
 import os
+import pathlib
 from pathlib import Path
 import random
 import warnings
@@ -17,7 +18,7 @@ from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from tqdm import TqdmExperimentalWarning
 import wandb
 
-from src.config import ENTITY_NAME, MODEL_DIR
+from src.config import MODEL_DIR
 from src.yaku.exp1 import config as yaku_config
 from src.yaku.exp1.training.model import DNN
 from src.yaku.exp1.feature.yaku_encoder import YakuEncoder
@@ -151,12 +152,23 @@ def train_yakus(rank, world_size, indices, yaku_names, parsed_args):
     num_yaku = len(indices)
 
     if rank == 0:
+        clean_config = {}
+
+        for k, v in vars(yaku_config).items():
+            if k.isupper():
+                if isinstance(v, pathlib.Path):
+                    clean_config[k] = str(v)
+
+                else:
+                    clean_config[k] = v
+
+        clean_config["yaku_names"] = yaku_names
+
         wandb.init(
-            entity=ENTITY_NAME,
             project=yaku_config.PROJECT_NAME,
             group=yaku_config.GROUP_NAME,
             name=parsed_args.name,
-            config={**vars(yaku_config), "yaku_names": yaku_names},
+            config=clean_config,
         )
 
     train_dataset = YakuDataset(yaku_config.TRAIN_DIR)

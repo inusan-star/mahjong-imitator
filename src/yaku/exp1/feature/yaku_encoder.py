@@ -5,7 +5,7 @@ import numpy as np
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.db.session import get_db_session
-from src.db.yaku import Yaku, YakuRepository
+from src.db.yaku import YakuRepository
 
 
 class YakuEncoder:
