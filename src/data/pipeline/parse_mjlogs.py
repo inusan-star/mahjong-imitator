@@ -13,6 +13,8 @@ from src.db.game import Game
 from src.db.game_player import GamePlayer
 from src.db.log import Log, LogRepository
 from src.db.player import Player, PlayerRepository
+from src.db.round import Round
+from src.db.round_yaku import RoundYaku
 from src.db.session import get_db_session
 
 
@@ -52,91 +54,118 @@ def _save_game_player_metadata(games_data: list[dict]):
             player_cache: dict[str, Player] = {}
 
             for data in games_data:
-                game = Game(
-                    log_id=data["log_id"],
-                    game_type=data["game_type"],
-                    lobby_id=data["lobby_id"],
-                )
-                session.add(game)
-                session.flush()
+                game = session.query(Game).filter(Game.log_id == data["log_id"]).first()
+                is_new_game = False
+
+                if not game:
+                    game = Game(
+                        log_id=data["log_id"],
+                        game_type=data["game_type"],
+                        lobby_id=data["lobby_id"],
+                    )
+                    session.add(game)
+                    session.flush()
+                    is_new_game = True
 
                 played_at = data["played_at"]
 
-                for i, p_data in enumerate(data["players"]):
-                    name = p_data["name"]
-                    gender = p_data["gender"]
-                    dan = p_data["dan"]
-                    rate = p_data["rate"]
-                    score = p_data["score"]
-                    rank = p_data["rank"]
+                if is_new_game:
+                    for i, p_data in enumerate(data["players"]):
+                        name = p_data["name"]
+                        gender = p_data["gender"]
+                        dan = p_data["dan"]
+                        rate = p_data["rate"]
+                        score = p_data["score"]
+                        rank = p_data["rank"]
 
-                    player: Optional[Player] = None
+                        player: Optional[Player] = None
 
-                    if name in player_cache:
-                        player = player_cache[name]
+                        if name in player_cache:
+                            player = player_cache[name]
 
-                    else:
-                        found_players = player_repo.find(Player.name == name)
+                        else:
+                            found_players = player_repo.find(Player.name == name)
 
-                        if found_players:
-                            player = found_players[0]
-                            player = cast(Player, player)
+                            if found_players:
+                                player = found_players[0]
+                                player = cast(Player, player)
+                                player_cache[name] = player
+
+                        if not player:
+                            player = Player(
+                                name=name,
+                                gender=gender,
+                                last_dan=dan,
+                                last_rate=rate,
+                                max_dan=dan,
+                                max_rate=rate,
+                                last_played_at=played_at,
+                                game_count=0,
+                                first_count=0,
+                                second_count=0,
+                                third_count=0,
+                                fourth_count=0,
+                            )
+                            session.add(player)
+                            session.flush()
                             player_cache[name] = player
 
-                    if not player:
-                        player = Player(
-                            name=name,
-                            gender=gender,
-                            last_dan=dan,
-                            last_rate=rate,
-                            max_dan=dan,
-                            max_rate=rate,
-                            last_played_at=played_at,
-                            game_count=0,
-                            first_count=0,
-                            second_count=0,
-                            third_count=0,
-                            fourth_count=0,
+                        if played_at >= player.last_played_at:
+                            player.last_dan = dan
+                            player.last_rate = rate
+                            player.last_played_at = played_at
+
+                        if dan > player.max_dan:
+                            player.max_dan = dan
+
+                        if rate > player.max_rate:
+                            player.max_rate = rate
+
+                        player.game_count += 1
+
+                        if rank == 1:
+                            player.first_count += 1
+
+                        elif rank == 2:
+                            player.second_count += 1
+
+                        elif rank == 3:
+                            player.third_count += 1
+
+                        elif rank == 4:
+                            player.fourth_count += 1
+
+                        game_player = GamePlayer(
+                            game_id=game.id,
+                            player_id=player.id,
+                            seat_index=i,
+                            dan=dan,
+                            rate=rate,
+                            score=score,
+                            rank=rank,
                         )
-                        session.add(player)
-                        session.flush()
-                        player_cache[name] = player
+                        session.add(game_player)
 
-                    if played_at >= player.last_played_at:
-                        player.last_dan = dan
-                        player.last_rate = rate
-                        player.last_played_at = played_at
-
-                    if dan > player.max_dan:
-                        player.max_dan = dan
-
-                    if rate > player.max_rate:
-                        player.max_rate = rate
-
-                    player.game_count += 1
-
-                    if rank == 1:
-                        player.first_count += 1
-
-                    elif rank == 2:
-                        player.second_count += 1
-
-                    elif rank == 3:
-                        player.third_count += 1
-
-                    elif rank == 4:
-                        player.fourth_count += 1
-
-                    game_player = GamePlayer(
-                        game_id=game.id,
-                        player_id=player.id,
-                        seat_index=i,
-                        dan=dan,
-                        rate=rate,
-                        score=score,
-                        rank=rank,
+                for round_data in data.get("rounds", []):
+                    existing_round = (
+                        session.query(Round)
+                        .filter_by(game_id=game.id, round_index=round_data["round_index"], honba=round_data["honba"])
+                        .first()
                     )
-                    session.add(game_player)
+
+                    if not existing_round:
+                        round_object = Round(
+                            game_id=game.id,
+                            round_index=round_data["round_index"],
+                            honba=round_data["honba"],
+                            is_agari=round_data["is_agari"],
+                        )
+                        session.add(round_object)
+                        session.flush()
+
+                        for yaku_id in round_data["yaku_ids"]:
+                            round_yaku = RoundYaku(round_id=round_object.id, yaku_id=yaku_id)
+                            session.add(round_yaku)
 
     except SQLAlchemyError:
         logging.error("Failed to save game and player metadata. Halting.")
@@ -215,12 +244,52 @@ def _parse_mjlog(log_id: int, mjlog_file_path: str, played_at) -> Optional[dict]
             }
         )
 
+    rounds_data = []
+    init_matches = list(re.finditer(data_config.MJLOG_INIT_REGEX, content))
+
+    for index, init_match in enumerate(init_matches):
+        round_index = int(init_match.group(1))
+        honba = int(init_match.group(2))
+        start_position = init_match.start()
+        end_position = init_matches[index + 1].start() if index + 1 < len(init_matches) else len(content)
+        round_content = content[start_position:end_position]
+
+        yaku_ids = set()
+        agari_in_round = list(re.finditer(data_config.MJLOG_AGARI_REGEX, round_content))
+
+        for agari in agari_in_round:
+            agari_tag = agari.group(0)
+
+            yaku_match = re.search(data_config.MJLOG_YAKU, agari_tag)
+
+            if yaku_match:
+                yaku_parts = yaku_match.group(1).split(",")
+
+                for yaku_id in range(0, len(yaku_parts), 2):
+                    yaku_ids.add(int(yaku_parts[yaku_id]) + 1)
+
+            yakuman_match = re.search(data_config.MJLOG_YAKUMAN, agari_tag)
+
+            if yakuman_match:
+                for yakuman_id in yakuman_match.group(1).split(","):
+                    yaku_ids.add(int(yakuman_id) + 1)
+
+        rounds_data.append(
+            {
+                "round_index": round_index,
+                "honba": honba,
+                "is_agari": len(agari_in_round) > 0,
+                "yaku_ids": list(yaku_ids),
+            }
+        )
+
     return {
         "log_id": log_id,
         "played_at": played_at,
         "game_type": game_type,
         "lobby_id": lobby_id,
         "players": players_data,
+        "rounds": rounds_data,
     }
 
 
@@ -232,9 +301,9 @@ def run(year: int):
         log_repo = LogRepository(session)
         logs = log_repo.find(
             Log.mjlog_status == 1,
-            Game.id.is_(None),
+            Round.id.is_(None),
             extract("year", Log.played_at) == year,
-            outer_joins=[Game],
+            outer_joins=[Game, Round],
             order_by=[Log.played_at.asc()],
         )
         logs_to_process = [(log.id, log.source_id, log.mjlog_file_path, log.played_at) for log in logs]

@@ -14,3 +14,7 @@ TENHO_LOG_URL_FORMAT = "http://tenhou.net/0/log/?{source_id}"
 MJLOG_GO_REGEX = r'<GO\s+type="(\d+)"\s+lobby="(\d+)"[^>]*/>'
 MJLOG_UN_REGEX = r'<UN\s+n0="([^"]+)"\s+n1="([^"]+)"\s+n2="([^"]+)"\s+n3="([^"]+)"\s+dan="([^"]+)"\s+rate="([^"]+)"\s+sx="([^"]+)"[^>]*/>'
 MJLOG_OWARI_REGEX = r'owari="(.*?)"'
+MJLOG_INIT_REGEX = r'<INIT[^>]*seed="(\d+),(\d+),[^"]*"[^>]*/>'
+MJLOG_AGARI_REGEX = r"<AGARI\s+[^>]*/>"
+MJLOG_YAKU = r'yaku="([^"]*)"'
+MJLOG_YAKUMAN = r'yakuman="([^"]*)"'
