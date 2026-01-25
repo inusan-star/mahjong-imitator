@@ -5,16 +5,16 @@ import time
 import requests
 from tqdm.rich import tqdm
 
-import src.config as config
+import src.config as global_config
 import src.data.config as data_config
 
 
 def run(year: int):
     """Download log zips."""
-    config.LOG_ZIPS_DIR.mkdir(parents=True, exist_ok=True)
+    global_config.LOG_ZIPS_DIR.mkdir(parents=True, exist_ok=True)
 
     file_name = data_config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
-    file_path = config.LOG_ZIPS_DIR / file_name
+    file_path = global_config.LOG_ZIPS_DIR / file_name
     url = data_config.TENHO_LOG_ZIP_URL_FORMAT.format(year=year)
 
     if file_path.exists():
@@ -24,8 +24,8 @@ def run(year: int):
     logging.info("Downloading '%s' from %s ...", file_name, url)
 
     try:
-        time.sleep(random.uniform(config.REQUEST_SLEEP_MIN, config.REQUEST_SLEEP_MAX))
-        response = requests.get(url, headers=data_config.TENHO_HEADERS, stream=True, timeout=config.REQUESTS_TIMEOUT)
+        time.sleep(random.uniform(global_config.REQUEST_SLEEP_MIN, global_config.REQUEST_SLEEP_MAX))
+        response = requests.get(url, headers=data_config.TENHO_HEADERS, stream=True, timeout=global_config.REQUESTS_TIMEOUT)
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
 

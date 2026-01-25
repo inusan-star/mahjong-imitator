@@ -5,7 +5,7 @@ from sqlalchemy import extract
 from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
-import src.config as config
+import src.config as global_config
 from src.db.log import Log, LogRepository
 from src.db.session import get_db_session
 
@@ -27,7 +27,7 @@ def _bulk_update_logs(logs: list[dict]):
 
 def run(year: int):
     """Convert mjlogs to jsons."""
-    json_output_dir = config.JSON_LOGS_DIR / str(year)
+    json_output_dir = global_config.JSON_LOGS_DIR / str(year)
 
     logging.info("Finding unprocessed logs from database ...")
 
@@ -54,16 +54,16 @@ def run(year: int):
 
     for log_id, source_id, mjlog_file_path in tqdm(logs_to_convert, desc="Converting & Updating", unit="log"):
         json_filepath = json_output_dir / f"{source_id}.json"
-        relative_path = json_filepath.relative_to(config.PROJECT_ROOT)
+        relative_path = json_filepath.relative_to(global_config.PROJECT_ROOT)
 
         log_to_update = {"id": log_id, "json_status": 2}
 
         try:
             try:
-                mjlog_text = (config.PROJECT_ROOT / mjlog_file_path).read_text(encoding="shift_jis")
+                mjlog_text = (global_config.PROJECT_ROOT / mjlog_file_path).read_text(encoding="shift_jis")
 
             except UnicodeDecodeError:
-                mjlog_text = (config.PROJECT_ROOT / mjlog_file_path).read_text(encoding="utf-8")
+                mjlog_text = (global_config.PROJECT_ROOT / mjlog_file_path).read_text(encoding="utf-8")
 
             process = subprocess.run(
                 ["mjxc", "convert", "--to-mjxproto"],
@@ -71,7 +71,7 @@ def run(year: int):
                 capture_output=True,
                 check=True,
                 text=True,
-                timeout=config.SUBPROCESS_TIMEOUT,
+                timeout=global_config.SUBPROCESS_TIMEOUT,
             )
 
             with open(json_filepath, "w", encoding="utf-8") as f:
@@ -88,7 +88,7 @@ def run(year: int):
 
         log_to_updates.append(log_to_update)
 
-        if len(log_to_updates) >= config.DB_BATCH_SIZE or (
+        if len(log_to_updates) >= global_config.DB_BATCH_SIZE or (
             (log_id, source_id, mjlog_file_path) == logs_to_convert[-1] and log_to_updates
         ):
             _bulk_update_logs(log_to_updates)

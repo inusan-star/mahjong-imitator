@@ -7,7 +7,7 @@ from sqlalchemy import extract
 from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
-import src.config as config
+import src.config as global_config
 import src.data.config as data_config
 from src.db.game import Game
 from src.db.game_player import GamePlayer
@@ -148,7 +148,7 @@ def _parse_mjlog(log_id: int, mjlog_file_path: str, played_at) -> Optional[dict]
     if not mjlog_file_path:
         return None
 
-    mjlog_path = config.PROJECT_ROOT / mjlog_file_path
+    mjlog_path = global_config.PROJECT_ROOT / mjlog_file_path
 
     if not mjlog_path.exists():
         logging.info("MJLOG file not found: %s", mjlog_path)
@@ -254,7 +254,7 @@ def run(year: int):
         if game_player_data:
             game_player_to_insert.append(game_player_data)
 
-        if len(game_player_to_insert) >= config.DB_BATCH_SIZE or (
+        if len(game_player_to_insert) >= global_config.DB_BATCH_SIZE or (
             (log_id, source_id, mjlog_file_path, played_at) == logs_to_process[-1] and game_player_to_insert
         ):
             _save_game_player_metadata(game_player_to_insert)

@@ -7,7 +7,7 @@ from sqlalchemy import extract
 from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
-import src.config as config
+import src.config as global_config
 import src.data.config as data_config
 from src.db.log import Log, LogRepository
 from src.db.session import get_db_session
@@ -30,7 +30,7 @@ def _bulk_update_logs(logs: list[dict]):
 
 def run(year: int):
     """Fetch mjlogs."""
-    mjlog_output_dir = config.MJLOGS_DIR / str(year)
+    mjlog_output_dir = global_config.MJLOGS_DIR / str(year)
 
     logging.info("Finding unprocessed logs from database ...")
 
@@ -57,13 +57,13 @@ def run(year: int):
     for log_id, source_id in tqdm(logs_to_fetch, desc="Fetching & Updating", unit="log"):
         url = data_config.TENHO_LOG_URL_FORMAT.format(source_id=source_id)
         mjlog_filepath = mjlog_output_dir / f"{source_id}.mjlog"
-        relative_path = mjlog_filepath.relative_to(config.PROJECT_ROOT)
+        relative_path = mjlog_filepath.relative_to(global_config.PROJECT_ROOT)
 
         log_to_update = {"id": log_id, "mjlog_status": 2}
 
         try:
-            time.sleep(random.uniform(config.REQUEST_SLEEP_MIN, config.REQUEST_SLEEP_MAX))
-            response = requests.get(url, headers=data_config.TENHO_HEADERS, timeout=config.REQUESTS_TIMEOUT)
+            time.sleep(random.uniform(global_config.REQUEST_SLEEP_MIN, global_config.REQUEST_SLEEP_MAX))
+            response = requests.get(url, headers=data_config.TENHO_HEADERS, timeout=global_config.REQUESTS_TIMEOUT)
             response.raise_for_status()
 
             with open(mjlog_filepath, "wb") as f:
@@ -77,7 +77,7 @@ def run(year: int):
 
         log_to_updates.append(log_to_update)
 
-        if len(log_to_updates) >= config.DB_BATCH_SIZE or ((log_id, source_id) == logs_to_fetch[-1] and log_to_updates):
+        if len(log_to_updates) >= global_config.DB_BATCH_SIZE or ((log_id, source_id) == logs_to_fetch[-1] and log_to_updates):
             _bulk_update_logs(log_to_updates)
             log_to_updates.clear()
 

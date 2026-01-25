@@ -5,7 +5,7 @@ import re
 from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
-import src.config as config
+import src.config as global_config
 import src.data.config as data_config
 from src.db.log import LogRepository
 from src.db.session import get_db_session
@@ -28,7 +28,7 @@ def _bulk_insert_logs(logs: list[dict]):
 
 def run(year: int):
     """Extract source IDs."""
-    txt_dir = config.TEXT_LOGS_DIR / str(year)
+    txt_dir = global_config.TEXT_LOGS_DIR / str(year)
 
     if not txt_dir.exists():
         logging.info("Directory '%s' not found. Skipping.", txt_dir)
@@ -73,7 +73,7 @@ def run(year: int):
             logging.error("Failed to extract source IDs. Skipping. File: %s", txt_file)
             continue
 
-        if len(logs_to_insert) >= config.DB_BATCH_SIZE or (txt_file == txt_files[-1] and logs_to_insert):
+        if len(logs_to_insert) >= global_config.DB_BATCH_SIZE or (txt_file == txt_files[-1] and logs_to_insert):
             _bulk_insert_logs(logs_to_insert)
             logs_to_insert.clear()
 

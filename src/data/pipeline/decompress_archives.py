@@ -6,15 +6,15 @@ import zipfile
 
 from tqdm.rich import tqdm
 
-import src.config as config
+import src.config as global_config
 import src.data.config as data_config
 
 
 def run(year: int):
     """Decompress log archives."""
     zip_filename = data_config.TENHO_LOG_ZIP_FILENAME_FORMAT.format(year=year)
-    zip_filepath = config.LOG_ZIPS_DIR / zip_filename
-    gz_output_dir = config.GZIPPED_LOGS_DIR / str(year)
+    zip_filepath = global_config.LOG_ZIPS_DIR / zip_filename
+    gz_output_dir = global_config.GZIPPED_LOGS_DIR / str(year)
 
     if not zip_filepath.exists():
         logging.info("File '%s' not found. Skipping.", zip_filename)
@@ -46,7 +46,7 @@ def run(year: int):
         logging.error("Failed to decompress '%s'. Halting.", zip_filename)
         raise
 
-    txt_output_dir = config.TEXT_LOGS_DIR / str(year)
+    txt_output_dir = global_config.TEXT_LOGS_DIR / str(year)
     gz_files = sorted(list(gz_output_dir.glob("*.html.gz")))
 
     if not gz_files:
