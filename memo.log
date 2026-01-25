@@ -1,7 +1,0 @@
-root@mahjong-imitator:/app# python -m src.yaku.exp1.feature.create_dataset
-[2026-01-19 22:01:03] INFO     Initialized YakuEncoder with 9 yaku IDs from database.            yaku_encoder.py:46
-                      INFO     Finding logs from database.                                     create_dataset.py:63
-[2026-01-19 22:01:12] INFO     Starting dataset creation.                                      create_dataset.py:82
-Creating 100% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1,400,000/1,400,000  [ 0:30:54 < 0:00:00 , 160 data/s ]
-[2026-01-19 22:32:07] INFO     Dataset creation completed. Games: 63890, Rounds: 219512,      create_dataset.py:158
-                               Datas: 1400000, Last Processed At: 2024-03-09 01:12:00                              
