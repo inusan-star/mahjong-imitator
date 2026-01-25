@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
 import src.config as config
+import src.data.config as data_config
 from src.db.log import Log, LogRepository
 from src.db.session import get_db_session
 
@@ -54,7 +55,7 @@ def run(year: int):
     log_to_updates = []
 
     for log_id, source_id in tqdm(logs_to_fetch, desc="Fetching & Updating", unit="log"):
-        url = config.TENHO_LOG_URL_FORMAT.format(source_id=source_id)
+        url = data_config.TENHO_LOG_URL_FORMAT.format(source_id=source_id)
         mjlog_filepath = mjlog_output_dir / f"{source_id}.mjlog"
         relative_path = mjlog_filepath.relative_to(config.PROJECT_ROOT)
 
@@ -62,7 +63,7 @@ def run(year: int):
 
         try:
             time.sleep(random.uniform(config.REQUEST_SLEEP_MIN, config.REQUEST_SLEEP_MAX))
-            response = requests.get(url, headers=config.TENHO_HEADERS, timeout=config.REQUESTS_TIMEOUT)
+            response = requests.get(url, headers=data_config.TENHO_HEADERS, timeout=config.REQUESTS_TIMEOUT)
             response.raise_for_status()
 
             with open(mjlog_filepath, "wb") as f:

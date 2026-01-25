@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
 import src.config as config
+import src.data.config as data_config
 from src.db.game import Game
 from src.db.game_player import GamePlayer
 from src.db.log import Log, LogRepository
@@ -165,7 +166,7 @@ def _parse_mjlog(log_id: int, mjlog_file_path: str, played_at) -> Optional[dict]
         return None
 
     # Parse Header
-    go_match = re.search(config.MJLOG_GO_REGEX, content)
+    go_match = re.search(data_config.MJLOG_GO_REGEX, content)
 
     if not go_match:
         return None
@@ -176,7 +177,7 @@ def _parse_mjlog(log_id: int, mjlog_file_path: str, played_at) -> Optional[dict]
     if not _is_target_rule(game_type):
         return None
 
-    un_match = re.search(config.MJLOG_UN_REGEX, content)
+    un_match = re.search(data_config.MJLOG_UN_REGEX, content)
 
     if not un_match:
         return None
@@ -187,7 +188,7 @@ def _parse_mjlog(log_id: int, mjlog_file_path: str, played_at) -> Optional[dict]
     sxs = un_match.group(7).split(",")
 
     # Parse Footer
-    owari_matches = list(re.finditer(config.MJLOG_OWARI_REGEX, content))
+    owari_matches = list(re.finditer(data_config.MJLOG_OWARI_REGEX, content))
 
     if not owari_matches:
         return None

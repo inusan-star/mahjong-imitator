@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from tqdm.rich import tqdm
 
 import src.config as config
+import src.data.config as data_config
 from src.db.log import LogRepository
 from src.db.session import get_db_session
 
@@ -52,8 +53,8 @@ def run(year: int):
                     if len(log_parts) < 4:
                         continue
 
-                    time_str_match = re.match(re.compile(config.TENHO_LOG_TIME_REGEX), log_parts[0].strip())
-                    source_id_match = re.search(re.compile(config.TENHO_LOG_ID_REGEX), log_parts[3].strip())
+                    time_str_match = re.match(re.compile(data_config.TENHO_LOG_TIME_REGEX), log_parts[0].strip())
+                    source_id_match = re.search(re.compile(data_config.TENHO_LOG_ID_REGEX), log_parts[3].strip())
 
                     if not time_str_match or not source_id_match:
                         continue
