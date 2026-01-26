@@ -12,6 +12,9 @@ services:
     restart: unless-stopped
     tty: true
     stdin_open: true
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     deploy:
       resources:
         reservations:
