@@ -257,24 +257,24 @@ def main():
     with open(common_config.SPLITS_FILE, "w", encoding="utf-8") as f:
         json.dump(game_allocation_map, f, indent=2, ensure_ascii=False)
 
+    total_split = sum(current_split_count.values())
+
     with open(common_config.YAKU_DISTRIBUTION_FILE, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             [
                 "Yaku Name",
-                "Total Count",
+                f"Total Count / {total_split}",
                 "Dataset Ratio (%)",
-                "Ideal Ratio (%)",
-                "Train Count",
+                f"Ideal Ratio (%) / {total_available_rounds}",
+                f"Train Count / {current_split_count['train']}",
                 "Train (%)",
-                "Valid Count",
+                f"Valid Count / {current_split_count['valid']}",
                 "Valid (%)",
-                "Test Count",
+                f"Test Count / {current_split_count['test']}",
                 "Test (%)",
             ]
         )
-
-        total_split = sum(current_split_count.values())
 
         for yaku_id, counts in sorted(yaku_distribution_stats.items(), key=lambda x: sum(x[1].values()), reverse=True):
             total_in_dataset = sum(counts.values())
@@ -305,22 +305,6 @@ def main():
                     f"{test_percentage:.2f}",
                 ]
             )
-
-        writer.writerow([])
-        writer.writerow(
-            [
-                "Total Split",
-                total_split,
-                "100.00",
-                "",
-                current_split_count["train"],
-                f"{(current_split_count['train']/total_split*100):.2f}" if total_split > 0 else "0.00",
-                current_split_count["valid"],
-                f"{(current_split_count['valid']/total_split*100):.2f}" if total_split > 0 else "0.00",
-                current_split_count["test"],
-                f"{(current_split_count['test']/total_split*100):.2f}" if total_split > 0 else "0.00",
-            ]
-        )
 
 
 if __name__ == "__main__":
