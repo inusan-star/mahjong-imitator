@@ -5,11 +5,11 @@ import torch
 from typing import Dict, List, Union
 
 import src.config as global_config
-from src.yaku.common import config as common_config
+import src.yaku.common.config as common_config
 
 
 class YakuEncoder:
-    """Encoder for mahjong yaku names."""
+    """Encoder for mahjong yaku names using MJX IDs."""
 
     def __init__(self) -> None:
         """Initialize the encoder."""
@@ -23,10 +23,10 @@ class YakuEncoder:
         self.name_to_index = {name: i for i, name in enumerate(self.yaku_names)}
         self.index_to_name = {i: name for i, name in enumerate(self.yaku_names)}
         self.num_classes = len(self.yaku_names)
-        self.name_to_mjx_index = self._load_mjx_mapping_with_duckdb()
+        self.mjx_id_to_index = self._load_mjx_id_to_index()
 
-    def _load_mjx_mapping_with_duckdb(self) -> Dict[str, int]:
-        """Load yaku name to MJX index mapping."""
+    def _load_mjx_id_to_index(self) -> Dict[int, int]:
+        """Load MJX yaku ID to internal multi-hot index mapping."""
         yaku_parquet_path = f"{global_config.DUMPS_DIR}/yaku/*.parquet"
 
         connection = duckdb.connect()
@@ -34,15 +34,21 @@ class YakuEncoder:
         yaku_master_df = connection.execute(query).df()
         connection.close()
 
-        return {row.name: int(row.id) - 1 for row in yaku_master_df.itertuples(index=False)}
+        mapping = {}
 
-    def encode(self, yaku_list: List[str]) -> torch.Tensor:
-        """Encode yaku names into a multi-hot vector."""
+        for row in yaku_master_df.itertuples(index=False):
+            if row.name in self.name_to_index:
+                mapping[int(row.id) - 1] = self.name_to_index[row.name]
+
+        return mapping
+
+    def encode(self, yaku_id_list: List[int]) -> torch.Tensor:
+        """Encode MJX yaku IDs into a multi-hot vector."""
         multi_hot_vector = torch.zeros(self.num_classes)
 
-        for yaku_name in yaku_list:
-            if yaku_name in self.name_to_index:
-                multi_hot_vector[self.name_to_index[yaku_name]] = 1.0
+        for yaku_id in yaku_id_list:
+            if yaku_id in self.mjx_id_to_index:
+                multi_hot_vector[self.mjx_id_to_index[yaku_id]] = 1.0
 
         return multi_hot_vector
 
@@ -52,14 +58,9 @@ class YakuEncoder:
             vector = vector.detach().cpu().numpy()
 
         detected_indices = np.where(vector >= threshold)[0]
-
         return [self.index_to_name[int(index)] for index in detected_indices]
-
-    def to_mjx_indices(self, yaku_list: List[str]) -> List[int]:
-        """Convert yaku names to MJX indices."""
-        return [self.name_to_mjx_index[name] for name in yaku_list if name in self.name_to_mjx_index]
 
     @property
     def labels(self) -> List[str]:
-        """Get yaku names."""
+        """Get the list of yaku names (Labels)."""
         return self.yaku_names

@@ -1,7 +1,7 @@
 import mjx
 import numpy as np
 
-from src.yaku.exp1 import config as yaku_config
+import src.yaku.exp1.config as exp1_config
 
 
 class ObservationEncoder:
@@ -9,7 +9,7 @@ class ObservationEncoder:
 
     def encode(self, obs: mjx.Observation) -> np.ndarray:
         """Encode observation into feature."""
-        feature = np.zeros(yaku_config.INPUT_DIM, dtype=np.int32)
+        feature = np.zeros(exp1_config.INPUT_DIM, dtype=np.int32)
 
         feature[0:1] = self._encode_seat_number(obs)
         feature[1:35] = self._encode_hands(obs)

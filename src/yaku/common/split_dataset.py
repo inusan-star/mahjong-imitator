@@ -12,7 +12,7 @@ from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
 
 import src.config as global_config
-from src.yaku.common import config as common_config
+import src.yaku.common.config as common_config
 
 
 def setup_logging():

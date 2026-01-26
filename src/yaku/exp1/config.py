@@ -1,32 +1,32 @@
-from src.config import PROCESSED_DATA_DIR
+from src.yaku.common.config import YAKU_DATA_DIR, YAKU_RESULT_DIR
 
 # --- WandB settings ---
 GROUP_NAME = "exp1"
 
 # --- Directory settings ---
-YAKU_DIR = PROCESSED_DATA_DIR / "yaku" / "exp1"
+DATA_DIR = YAKU_DATA_DIR / "exp1"
+TRAIN_DIR = DATA_DIR / "train"
+VALID_DIR = DATA_DIR / "valid"
+TEST_DIR = DATA_DIR / "test"
 
-TRAIN_DIR = YAKU_DIR / "train"
-VALID_DIR = YAKU_DIR / "valid"
-TEST_DIR = YAKU_DIR / "test"
+RESULT_DIR = YAKU_RESULT_DIR / "exp1"
 
-INPUT_NAME = "input"
-OUTPUT_NAME = "output"
+DATA_STATS_CSV = RESULT_DIR / "data_stats.csv"
+
+INPUT_FILENAME_PREFIX = "input"
+OUTPUT_FILENAME_PREFIX = "output"
 
 # --- Dataset creation parameters ---
-START_YEAR = 2024
-TARGET_BATCH_SIZE = 100000
-TRAIN_BATCH_COUNT = 12
-VALID_BATCH_COUNT = 1
-TEST_BATCH_COUNT = 1
+CHUNK_SIZE = 100000
 
 # --- Network architecture ---
 INPUT_DIM = 472
-HIDDEN_LAYERS = [512, 512, 256, 256, 256, 64]
 OUTPUT_DIM = 1
+HIDDEN_LAYERS = [512, 512, 256, 256, 256, 64]
 
 # --- Training hyperparameters ---
-LEARNING_RATE = 2e-4
+LEARNING_RATE = 5e-4
+WEIGHT_DECAY = 1e-3
 LEARNING_BATCH_SIZE = 2048
 MAX_EPOCHS = 100
-EARLY_STOPPING_PATIENCE = 5
+EARLY_STOPPING_PATIENCE = 10

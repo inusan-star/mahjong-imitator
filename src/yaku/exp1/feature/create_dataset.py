@@ -1,7 +1,10 @@
-from datetime import datetime
+import csv
+import json
 import logging
+import multiprocessing as mp
 from pathlib import Path
 import random
+from typing import List, Tuple, Dict, Any
 import warnings
 
 import mjx
@@ -12,12 +15,13 @@ from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
 
 import src.config as global_config
-from src.db.log import Log
-from src.db.session import get_db_session
-
-from src.yaku.exp1 import config as yaku_config
+import src.yaku.common.config as common_config
+import src.yaku.exp1.config as exp1_config
+from src.yaku.common.yaku_encoder import YakuEncoder
 from src.yaku.exp1.feature.obs_encoder import ObservationEncoder
-from src.yaku.exp1.feature.yaku_encoder import YakuEncoder
+
+worker_obs_encoder: ObservationEncoder = None  # type: ignore
+worker_yaku_encoder: YakuEncoder = None  # type: ignore
 
 
 def setup_logging():
@@ -35,136 +39,218 @@ def setup_logging():
     )
 
 
-def _save_batch(batch_count: int, input_history: list, output_history: list, parent_dir: Path):
-    """Save batch to the specified directory."""
-    input_path = parent_dir / yaku_config.INPUT_NAME / f"history_{batch_count:03d}.npy"
-    output_path = parent_dir / yaku_config.OUTPUT_NAME / f"history_{batch_count:03d}.npy"
-
-    np.save(input_path, np.array(input_history, dtype=np.int32))
-    np.save(output_path, np.array(output_history, dtype=np.float32))
+def worker_init():
+    """Initialize encoders in each worker process."""
+    global worker_obs_encoder, worker_yaku_encoder
+    worker_obs_encoder = ObservationEncoder()
+    worker_yaku_encoder = YakuEncoder()
 
 
-def run():
-    """Create yaku prediction dataset."""
-    random.seed(yaku_config.SEED)
-    np.random.seed(yaku_config.SEED)
-    input_history, output_history = [], []
-    game_count, round_count, batch_count, data_count = 0, 0, 0, 0
-    last_processed_at = None
+def _save_chunk(chunk_count: int, input_list: List[np.ndarray], output_list: List[np.ndarray], parent_directory: Path):
+    """Save a chunk of data."""
+    input_directory = parent_directory / exp1_config.INPUT_FILENAME_PREFIX
+    output_directory = parent_directory / exp1_config.OUTPUT_FILENAME_PREFIX
 
-    for parent_dir in [yaku_config.TRAIN_DIR, yaku_config.VALID_DIR, yaku_config.TEST_DIR]:
-        (parent_dir / yaku_config.INPUT_NAME).mkdir(parents=True, exist_ok=True)
-        (parent_dir / yaku_config.OUTPUT_NAME).mkdir(parents=True, exist_ok=True)
+    input_directory.mkdir(parents=True, exist_ok=True)
+    output_directory.mkdir(parents=True, exist_ok=True)
 
-    obs_encoder = ObservationEncoder()
-    yaku_encoder = YakuEncoder()
+    input_path = input_directory / f"chunk_{chunk_count:03d}.npy"
+    output_path = output_directory / f"chunk_{chunk_count:03d}.npy"
 
-    with get_db_session() as session:
-        logging.info("Finding logs from database.")
+    np.save(input_path, np.array(input_list, dtype=np.int32))
+    np.save(output_path, np.array(output_list, dtype=np.float32))
 
-        logs = (
-            session.query(Log)
-            .filter(Log.json_status == 1)
-            .filter(Log.played_at >= datetime(yaku_config.START_YEAR, 1, 1))
-            .order_by(Log.played_at.asc())
-            .all()
-        )
 
-        session.expunge_all()
+def _process_round(args: Tuple[str, Dict[str, Any]]) -> List[Tuple[str, np.ndarray, np.ndarray]]:
+    """Process single round (Worker function)."""
+    round_id, info = args
+    split = info["split"]
+    json_path = global_config.PROJECT_ROOT / info["path"]
 
-    if not logs:
-        logging.info("No logs found. Skipping.")
-        return
+    if not json_path.exists():
+        logging.error("JSON path does not exist: %s", json_path)
+        return []
 
-    target_batch_total = yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT + yaku_config.TEST_BATCH_COUNT
-    total_target = yaku_config.TARGET_BATCH_SIZE * target_batch_total
+    try:
+        with open(json_path, "r", encoding="utf-8") as file:
+            round_lines = file.readlines()
 
-    logging.info("Starting dataset creation.")
+        round_index = info["round_index"]
+        honba = info["honba"]
+        target_line = ""
 
-    with tqdm(total=total_target, desc="Creating", unit="data") as pbar:
-        for log in logs:
-            if batch_count >= target_batch_total:
+        for line in round_lines:
+            line_json = json.loads(line.strip())
+            init_score = line_json.get("publicObservation", {}).get("initScore", {})
+
+            if init_score.get("round", 0) == round_index and init_score.get("honba", 0) == honba:
+                target_line = line
                 break
 
-            json_path = global_config.PROJECT_ROOT / log.json_file_path
+        if not target_line:
+            logging.error("Target line not found for round_id: %s", round_id)
+            return []
 
-            if not json_path.exists():
+        state = State(target_line.strip())
+        terminal = state.to_proto().round_terminal
+
+        if not terminal:
+            logging.error("Round terminal not found for round_id: %s", round_id)
+            return []
+
+        results = []
+
+        for win in terminal.wins:
+            if not win.yakus and not win.yakumans:
                 continue
 
-            game_count += 1
-            last_processed_at = log.played_at
+            all_yakus = list(win.yakus) + list(win.yakumans)
+            yaku_vector = worker_yaku_encoder.encode(all_yakus)
 
-            try:
-                with open(json_path, "r", encoding="utf-8") as f:
-                    round_lines = f.readlines()
-
-            except (OSError, ValueError):
+            if np.sum(yaku_vector.numpy()) == 0:
                 continue
 
-            for round_line in round_lines:
-                if batch_count >= target_batch_total:
-                    break
+            target_action_types = [
+                mjx.ActionType.DISCARD,
+                mjx.ActionType.TSUMOGIRI,
+                mjx.ActionType.RIICHI,
+                mjx.ActionType.CHI,
+                mjx.ActionType.PON,
+                mjx.ActionType.OPEN_KAN,
+                mjx.ActionType.CLOSED_KAN,
+                mjx.ActionType.ADDED_KAN,
+            ]
 
-                state = State(round_line.strip())
-                terminal = state.to_proto().round_terminal
+            decisions = [
+                (observation, action)
+                for observation, action in state.past_decisions()
+                if observation.who() == win.who and action.type() in target_action_types
+            ]
 
-                if not terminal.wins:
-                    continue
+            if not decisions:
+                continue
 
-                for win in terminal.wins:
-                    yaku_vector = yaku_encoder.encode(win.yakus)
+            for observation, _ in decisions:
+                results.append(
+                    (
+                        split,
+                        worker_obs_encoder.encode(observation),
+                        yaku_vector.numpy(),
+                    )
+                )
 
-                    if np.sum(yaku_vector) == 0:
-                        continue
+        if not results:
+            logging.error("No valid results for round_id: %s", round_id)
 
-                    round_count += 1
+        return results
 
-                    decisions = [
-                        (obs, act)
-                        for obs, act in state.past_decisions()
-                        if obs.who() == win.who and act.type() in [mjx.ActionType.DISCARD, mjx.ActionType.TSUMOGIRI]
-                    ]
+    except Exception as error:
+        logging.error("Error processing round %s: %s", round_id, error)
+        return []
 
-                    if not decisions:
-                        continue
 
-                    if batch_count >= yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT:
-                        decisions = [random.choice(decisions)]
+def main():
+    """Create dataset based on splits using multiprocessing."""
+    random.seed(common_config.SEED)
+    np.random.seed(common_config.SEED)
 
-                    for obs, _ in decisions:
-                        input_history.append(obs_encoder.encode(obs))
-                        output_history.append(yaku_vector)
-                        data_count += 1
-                        pbar.update(1)
+    if not common_config.SPLITS_FILE.exists():
+        logging.error("Splits file not found.")
+        return
 
-                        if data_count % yaku_config.TARGET_BATCH_SIZE == 0:
-                            batch_count += 1
+    with open(common_config.SPLITS_FILE, "r", encoding="utf-8") as file:
+        game_allocation_map = json.load(file)
 
-                            if batch_count <= yaku_config.TRAIN_BATCH_COUNT:
-                                target_dir = yaku_config.TRAIN_DIR
+    logging.info("Starting dataset creation for experiment 1 ...")
 
-                            elif batch_count <= yaku_config.TRAIN_BATCH_COUNT + yaku_config.VALID_BATCH_COUNT:
-                                target_dir = yaku_config.VALID_DIR
+    split_directory_map = {"train": exp1_config.TRAIN_DIR, "valid": exp1_config.VALID_DIR, "test": exp1_config.TEST_DIR}
+    buffers = {split: {"input": [], "output": []} for split in split_directory_map}
+    chunk_counts = {split: 0 for split in split_directory_map}
+    split_data_counts = {split: 0 for split in split_directory_map}
+    total_data_count = 0
+    yaku_distribution = {split: None for split in split_directory_map}
 
-                            else:
-                                target_dir = yaku_config.TEST_DIR
+    with mp.Pool(processes=mp.cpu_count(), initializer=worker_init) as pool:
+        with tqdm(total=len(game_allocation_map), desc="Creating", unit="round") as progress_bar:
+            for results in pool.imap_unordered(_process_round, game_allocation_map.items()):
+                for split, input_data, output_data in results:
+                    buffers[split]["input"].append(input_data)
+                    buffers[split]["output"].append(output_data)
 
-                            _save_batch(batch_count, input_history, output_history, target_dir)
-                            input_history.clear()
-                            output_history.clear()
+                    total_data_count += 1
+                    split_data_counts[split] += 1
 
-                            if batch_count >= target_batch_total:
-                                break
+                    yaku_np = output_data.astype(np.int64)
 
-    logging.info(
-        "Dataset creation completed. Games: %d, Rounds: %d, Datas: %d, Last Processed At: %s",
-        game_count,
-        round_count,
-        data_count,
-        last_processed_at,
-    )
+                    if yaku_distribution[split] is None:
+                        yaku_distribution[split] = yaku_np.copy()
+
+                    else:
+                        yaku_distribution[split] += yaku_np
+
+                    if len(buffers[split]["input"]) >= exp1_config.CHUNK_SIZE:
+                        chunk_counts[split] += 1
+
+                        _save_chunk(
+                            chunk_counts[split],
+                            buffers[split]["input"],
+                            buffers[split]["output"],
+                            split_directory_map[split],
+                        )
+
+                        buffers[split]["input"].clear()
+                        buffers[split]["output"].clear()
+
+                progress_bar.update(1)
+
+    for split, directory in split_directory_map.items():
+        if buffers[split]["input"]:
+            chunk_counts[split] += 1
+            _save_chunk(chunk_counts[split], buffers[split]["input"], buffers[split]["output"], directory)
+
+    logging.info("Dataset creation completed.")
+
+    exp1_config.RESULT_DIR.mkdir(parents=True, exist_ok=True)
+
+    final_yaku_encoder = YakuEncoder()
+    yaku_names = final_yaku_encoder.labels
+
+    with open(exp1_config.DATA_STATS_CSV, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Statistic", "Train", "Valid", "Test", "Total"])
+        writer.writerow(
+            [
+                "Data Count",
+                split_data_counts["train"],
+                split_data_counts["valid"],
+                split_data_counts["test"],
+                total_data_count,
+            ]
+        )
+        writer.writerow(
+            [
+                "Chunk Count",
+                chunk_counts["train"],
+                chunk_counts["valid"],
+                chunk_counts["test"],
+                sum(chunk_counts.values()),
+            ]
+        )
+        writer.writerow([])
+        writer.writerow(["Yaku Name", "Train", "Valid", "Test"])
+
+        num_yaku = len(yaku_distribution["train"]) if yaku_distribution["train"] is not None else 0
+        for i in range(num_yaku):
+            writer.writerow(
+                [
+                    yaku_names[i],
+                    yaku_distribution["train"][i] if yaku_distribution["train"] is not None else 0,
+                    yaku_distribution["valid"][i] if yaku_distribution["valid"] is not None else 0,
+                    yaku_distribution["test"][i] if yaku_distribution["test"] is not None else 0,
+                ]
+            )
 
 
 if __name__ == "__main__":
     setup_logging()
-    run()
+    main()
