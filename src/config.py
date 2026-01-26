@@ -2,7 +2,7 @@ from pathlib import Path
 
 # ---- General Settings ----
 DB_BATCH_SIZE = 1000
-REQUESTS_TIMEOUT = 30
+DB_CHUNK_SIZE = 500000
 REQUEST_SLEEP_MIN = 0.5
 REQUEST_SLEEP_MAX = 1.5
 SUBPROCESS_TIMEOUT = 30
@@ -17,6 +17,7 @@ MODEL_DIR = PROJECT_ROOT / "models"
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
+DUMPS_DIR = DATA_DIR / "dumps"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 LOG_ZIPS_DIR = RAW_DATA_DIR / "log_zips"
