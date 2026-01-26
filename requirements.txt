@@ -1,5 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cu126
 
+duckdb==1.4.3
 mjx==0.1.0
 pandas==2.3.3
 pyarrow==21.0.0
