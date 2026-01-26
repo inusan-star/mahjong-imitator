@@ -137,6 +137,7 @@ def train_yakus(indices, yaku_names, parsed_args, device):
     use_wandb = not parsed_args.no_wandb
 
     if use_wandb:
+        logging.info("Initializing WandB...")
         clean_config = {}
 
         for k, v in vars(exp1_config).items():
@@ -156,6 +157,7 @@ def train_yakus(indices, yaku_names, parsed_args, device):
             config=clean_config,
         )
 
+    logging.info("Preparing Datasets and DataLoaders...")
     train_dataset = YakuDataset(exp1_config.TRAIN_DIR)
     valid_dataset = YakuDataset(exp1_config.VALID_DIR)
 
@@ -174,6 +176,7 @@ def train_yakus(indices, yaku_names, parsed_args, device):
         pin_memory=True,
     )
 
+    logging.info("Initializing %d models on device: %s", num_yaku, device)
     models = nn.ModuleList(
         [
             DNN(
@@ -196,10 +199,15 @@ def train_yakus(indices, yaku_names, parsed_args, device):
     for save_dir in save_dirs:
         save_dir.mkdir(parents=True, exist_ok=True)
 
+    logging.info("Starting training loop (Total Epochs: %d)...", exp1_config.MAX_EPOCHS)
+
     for epoch in range(exp1_config.MAX_EPOCHS):
+        logging.info("Epoch %d/%d: Training phase...", epoch + 1, exp1_config.MAX_EPOCHS)
         train_losses, train_accs = _train_step(
             models, indices, train_loader, loss_function, optimizer, device, num_yaku
         )
+
+        logging.info("Epoch %d/%d: Validation phase...", epoch + 1, exp1_config.MAX_EPOCHS)
         valid_losses, valid_accs = _valid_step(models, indices, valid_loader, loss_function, device, num_yaku)
 
         log_dict = {"epoch": epoch + 1}
@@ -277,7 +285,7 @@ if __name__ == "__main__":
     setup_logging()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--yaku_indices", type=str, default="0,1,2,3,4,5,6,7,8")
+    parser.add_argument("--yaku_indices", type=str, default="0")
     parser.add_argument("--gpu", type=str, default="0")
     parser.add_argument("--name", type=str, default=datetime.now().strftime("%Y%m%d_%H%M%S"))
     parser.add_argument("--no_wandb", action="store_true", help="Disable WandB logging")
