@@ -23,8 +23,8 @@ from src.config import MODEL_DIR
 import src.yaku.common.config as common_config
 from src.yaku.common.yaku_encoder import YakuEncoder
 import src.yaku.exp1.config as exp1_config
-import src.yaku.exp2.config as exp2_config
-from src.yaku.exp2.training.model import DNN
+import src.yaku.exp3.config as exp3_config  # exp2から変更
+from src.yaku.exp3.training.model import DNN  # exp2から変更
 
 
 def setup_logging():
@@ -86,11 +86,11 @@ def evaluate_model(indices: list, yaku_names: list, loader: DataLoader, device: 
     """Evaluate single multi-task model and return metrics."""
     num_yaku = len(indices)
 
-    model_path = MODEL_DIR / common_config.PROJECT_NAME / exp2_config.GROUP_NAME / "best_model.pth"
+    model_path = MODEL_DIR / common_config.PROJECT_NAME / exp3_config.GROUP_NAME / "best_model.pth"  # exp2から変更
     model = DNN(
-        input_dim=exp2_config.INPUT_DIM,
-        hidden_layers=exp2_config.HIDDEN_LAYERS,
-        output_dim=exp2_config.OUTPUT_DIM,
+        input_dim=exp3_config.INPUT_DIM,  # exp2から変更
+        hidden_layers=exp3_config.HIDDEN_LAYERS,  # exp2から変更
+        output_dim=exp3_config.OUTPUT_DIM,  # exp2から変更
     ).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
@@ -169,16 +169,16 @@ def main(parsed_args: argparse.Namespace):
     test_dataset = YakuDataset(exp1_config.VALID_DIR)
     test_loader = DataLoader(
         test_dataset,
-        batch_size=exp2_config.LEARNING_BATCH_SIZE,
+        batch_size=exp3_config.LEARNING_BATCH_SIZE,  # exp2から変更
         shuffle=False,
         num_workers=os.cpu_count(),
         pin_memory=True,
     )
 
-    logging.info("Starting evaluation for %d Yakus (Multi-task)...", len(yaku_names))
+    logging.info("Starting evaluation for %d Yakus (Multi-task Exp3)...", len(yaku_names))
     evaluation_results = evaluate_model(indices, yaku_names, test_loader, device)
 
-    output_directory = exp2_config.RESULT_DIR
+    output_directory = exp3_config.RESULT_DIR  # exp2から変更
     output_directory.mkdir(parents=True, exist_ok=True)
 
     df_basic = pd.DataFrame(evaluation_results["basic"])

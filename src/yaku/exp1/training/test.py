@@ -183,7 +183,7 @@ def main(parsed_args: argparse.Namespace):
     logging.info("Starting evaluation for %d Yakus...", len(yaku_names))
     evaluation_results = evaluate_models(indices, yaku_names, test_loader, device)
 
-    output_directory = Path("results") / "exp1"
+    output_directory = exp1_config.RESULT_DIR
     output_directory.mkdir(parents=True, exist_ok=True)
 
     df_basic = pd.DataFrame(evaluation_results["basic"])

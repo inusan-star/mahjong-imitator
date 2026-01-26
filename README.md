@@ -30,4 +30,6 @@ CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku
 python -m src.yaku.exp1.training.test --gpu 2
 CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp2.training.train --gpu 0 --no_wandb
 python -m src.yaku.exp2.training.test --gpu 2
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp3.training.train --gpu 0 --no_wandb
+python -m src.yaku.exp3.training.test --gpu 2
 ```
