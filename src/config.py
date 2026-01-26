@@ -19,6 +19,7 @@ RAW_DATA_DIR = DATA_DIR / "raw"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
 DUMPS_DIR = DATA_DIR / "dumps"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
+RESULTS_DIR = PROJECT_ROOT / "results"
 
 LOG_ZIPS_DIR = RAW_DATA_DIR / "log_zips"
 GZIPPED_LOGS_DIR = INTERIM_DATA_DIR / "gzipped_logs"

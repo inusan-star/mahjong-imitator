@@ -1,11 +1,13 @@
-from src.config import PROCESSED_DATA_DIR
+from src.config import PROCESSED_DATA_DIR, RESULTS_DIR
 
 # --- WandB settings ---
 PROJECT_NAME = "yaku"
 
 # --- Directory settings ---
-YAKU_DIR = PROCESSED_DATA_DIR / "yaku"
-SPLITS_FILE = YAKU_DIR / "splits.json"
+YAKU_DATA_DIR = PROCESSED_DATA_DIR / "yaku"
+YAKU_RESULT_DIR = RESULTS_DIR / "yaku"
+SPLITS_FILE = YAKU_DATA_DIR / "splits.json"
+YAKU_DISTRIBUTION_FILE = YAKU_RESULT_DIR / "yaku_distribution.csv"
 
 # --- Dataset split parameters ---
 SEED = 42

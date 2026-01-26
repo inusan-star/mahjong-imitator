@@ -3,3 +3,6 @@
 
 # Model files
 /models
+
+# Results files
+/results

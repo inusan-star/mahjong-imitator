@@ -13,5 +13,8 @@
 # Python cache files
 __pycache__/
 
+# Results files
+/results
+
 # Weights & Biases files
 wandb/

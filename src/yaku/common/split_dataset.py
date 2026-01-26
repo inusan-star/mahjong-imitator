@@ -1,3 +1,4 @@
+import csv
 import json
 import logging
 import random
@@ -6,9 +7,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 
 import duckdb
-from rich.console import Console
 from rich.logging import RichHandler
-from rich.table import Table
 from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
 
@@ -211,7 +210,8 @@ def main():
 
     random.seed(common_config.SEED)
 
-    common_config.YAKU_DIR.mkdir(parents=True, exist_ok=True)
+    common_config.YAKU_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    common_config.YAKU_RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
     logging.info("Loading data with DuckDB ...")
 
@@ -257,46 +257,70 @@ def main():
     with open(common_config.SPLITS_FILE, "w", encoding="utf-8") as f:
         json.dump(game_allocation_map, f, indent=2, ensure_ascii=False)
 
-    console = Console()
-    table = Table(title=f"Dataset Yaku Distribution ({len(yaku_counts)} Classes)")
-    table.add_column("Yaku Name", justify="left", style="cyan")
-    table.add_column("Ideal Ratio (%)", justify="right", style="yellow")
-    table.add_column("Total Count", justify="right", style="magenta")
-    table.add_column("Train (Count/%)", justify="right")
-    table.add_column("Valid (Count/%)", justify="right")
-    table.add_column("Test (Count/%)", justify="right")
-    table.add_column("Dataset Ratio (%)", justify="right", style="green")
-
-    for yaku_id, counts in sorted(yaku_distribution_stats.items(), key=lambda x: sum(x[1].values()), reverse=True):
-        ideal_percentage = (yaku_counts[yaku_id] / total_available_rounds) * 100
-        total_in_dataset = sum(counts.values())
-        percentage = (total_in_dataset / common_config.TOTAL_EXTRACT_ROUNDS) * 100
-        train_percentage = (
-            (counts["train"] / current_split_count["train"] * 100) if current_split_count["train"] > 0 else 0
-        )
-        valid_percentage = (
-            (counts["valid"] / current_split_count["valid"] * 100) if current_split_count["valid"] > 0 else 0
-        )
-        test_percentage = (counts["test"] / current_split_count["test"] * 100) if current_split_count["test"] > 0 else 0
-
-        table.add_row(
-            id_to_name[yaku_id],
-            f"{ideal_percentage:.2f}%",
-            f"{total_in_dataset:,}",
-            f"{counts['train']:,} ({train_percentage:.2f}%)",
-            f"{counts['valid']:,} ({valid_percentage:.2f}%)",
-            f"{counts['test']:,} ({test_percentage:.2f}%)",
-            f"{percentage:.2f}%",
+    with open(common_config.YAKU_DISTRIBUTION_FILE, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "Yaku Name",
+                "Total Count",
+                "Dataset Ratio (%)",
+                "Ideal Ratio (%)",
+                "Train Count",
+                "Train (%)",
+                "Valid Count",
+                "Valid (%)",
+                "Test Count",
+                "Test (%)",
+            ]
         )
 
-    console.print(table)
+        total_split = sum(current_split_count.values())
 
-    logging.info(
-        "Split completed. Train: %d, Valid: %d, Test: %d",
-        current_split_count["train"],
-        current_split_count["valid"],
-        current_split_count["test"],
-    )
+        for yaku_id, counts in sorted(yaku_distribution_stats.items(), key=lambda x: sum(x[1].values()), reverse=True):
+            total_in_dataset = sum(counts.values())
+            dataset_percentage = (total_in_dataset / total_split * 100) if total_split > 0 else 0
+            ideal_percentage = (yaku_counts[yaku_id] / total_available_rounds) * 100
+
+            train_percentage = (
+                (counts["train"] / current_split_count["train"] * 100) if current_split_count["train"] > 0 else 0
+            )
+            valid_percentage = (
+                (counts["valid"] / current_split_count["valid"] * 100) if current_split_count["valid"] > 0 else 0
+            )
+            test_percentage = (
+                (counts["test"] / current_split_count["test"] * 100) if current_split_count["test"] > 0 else 0
+            )
+
+            writer.writerow(
+                [
+                    id_to_name[yaku_id],
+                    total_in_dataset,
+                    f"{dataset_percentage:.2f}",
+                    f"{ideal_percentage:.2f}",
+                    counts["train"],
+                    f"{train_percentage:.2f}",
+                    counts["valid"],
+                    f"{valid_percentage:.2f}",
+                    counts["test"],
+                    f"{test_percentage:.2f}",
+                ]
+            )
+
+        writer.writerow([])
+        writer.writerow(
+            [
+                "Total Split",
+                total_split,
+                "100.00",
+                "",
+                current_split_count["train"],
+                f"{(current_split_count['train']/total_split*100):.2f}" if total_split > 0 else "0.00",
+                current_split_count["valid"],
+                f"{(current_split_count['valid']/total_split*100):.2f}" if total_split > 0 else "0.00",
+                current_split_count["test"],
+                f"{(current_split_count['test']/total_split*100):.2f}" if total_split > 0 else "0.00",
+            ]
+        )
 
 
 if __name__ == "__main__":
