@@ -295,14 +295,14 @@ def main():
                 [
                     id_to_name[yaku_id],
                     total_in_dataset,
-                    f"{dataset_percentage:.2f}",
-                    f"{ideal_percentage:.2f}",
+                    f"{dataset_percentage:.5f}",
+                    f"{ideal_percentage:.5f}",
                     counts["train"],
-                    f"{train_percentage:.2f}",
+                    f"{train_percentage:.5f}",
                     counts["valid"],
-                    f"{valid_percentage:.2f}",
+                    f"{valid_percentage:.5f}",
                     counts["test"],
-                    f"{test_percentage:.2f}",
+                    f"{test_percentage:.5f}",
                 ]
             )
 
