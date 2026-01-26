@@ -24,6 +24,7 @@ docker compose exec app bash
 ```
 python -m src.data.main
 python -m src.data.export
+python -m src.yaku.common.split_dataset
 python -m src.yaku.exp1.feature.create_dataset
 python -m src.yaku.exp1.training.train
 ```

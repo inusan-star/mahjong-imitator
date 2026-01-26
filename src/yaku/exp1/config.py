@@ -1,7 +1,6 @@
 from src.config import PROCESSED_DATA_DIR
 
 # --- WandB settings ---
-PROJECT_NAME = "yaku"
 GROUP_NAME = "exp1"
 
 # --- Directory settings ---
@@ -15,7 +14,6 @@ INPUT_NAME = "input"
 OUTPUT_NAME = "output"
 
 # --- Dataset creation parameters ---
-SEED = 42
 START_YEAR = 2024
 TARGET_BATCH_SIZE = 100000
 TRAIN_BATCH_COUNT = 12
