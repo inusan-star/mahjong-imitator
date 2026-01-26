@@ -189,7 +189,12 @@ def _allocate_games(
 
                 best_split = min(available_splits, key=lambda s: _get_satisfaction_ratio(s, representative_yaku_id))
 
-            game_allocation_map[round_id] = {"path": game_data_map[round_id]["path"], "split": best_split}
+            game_allocation_map[round_id] = {
+                "path": game_data_map[round_id]["path"],
+                "round_index": game_data_map[round_id]["round_index"],
+                "honba": game_data_map[round_id]["honba"],
+                "split": best_split,
+            }
             current_split_count[best_split] += 1
 
             for yaku_id in yaku_ids:
