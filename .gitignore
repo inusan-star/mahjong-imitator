@@ -1,6 +1,9 @@
 # Data files
 /data
 
+# Egg info files
+/*.egg-info
+
 # Environment file
 .env
 

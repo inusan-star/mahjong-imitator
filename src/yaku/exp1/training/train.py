@@ -12,6 +12,7 @@ from rich.logging import RichHandler
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
+from tqdm.auto import tqdm
 from tqdm import TqdmExperimentalWarning
 import wandb
 
@@ -48,9 +49,15 @@ class YakuDataset(Dataset):
         self.input_files = sorted(list(self.input_dir.glob("*.npy")))
         self.output_files = sorted(list(self.output_dir.glob("*.npy")))
 
-        sample_input = np.load(self.input_files[0], mmap_mode="r")
-        self.samples_per_file = sample_input.shape[0]
-        self.total_samples = len(self.input_files) * self.samples_per_file
+        self.file_offsets = []
+        self.total_samples = 0
+
+        for f in self.input_files:
+            size = np.load(f, mmap_mode="r").shape[0]
+            self.file_offsets.append(self.total_samples)
+            self.total_samples += size
+
+        self.file_offsets = np.array(self.file_offsets)
 
     def __len__(self):
         """Return the total number of samples in the dataset."""
@@ -58,8 +65,8 @@ class YakuDataset(Dataset):
 
     def __getitem__(self, idx):
         """Get a single sample from the dataset."""
-        file_idx = idx // self.samples_per_file
-        inner_idx = idx % self.samples_per_file
+        file_idx = np.searchsorted(self.file_offsets, idx, side="right") - 1
+        inner_idx = idx - self.file_offsets[file_idx]
 
         inputs = np.load(self.input_files[file_idx], mmap_mode="r")
         outputs = np.load(self.output_files[file_idx], mmap_mode="r")
@@ -67,8 +74,8 @@ class YakuDataset(Dataset):
         return torch.from_numpy(inputs[inner_idx].copy()).float(), torch.from_numpy(outputs[inner_idx].copy()).float()
 
 
-def _train_step(models, indices, loader, loss_function, optimizer, device, num_yaku):
-    """Execute a single training epoch."""
+def _train_step(models, indices, loader, loss_function, optimizer, device, num_yaku, epoch):
+    """Execute a single training epoch with progress bar."""
     for model in models:
         model.train()
 
@@ -76,7 +83,9 @@ def _train_step(models, indices, loader, loss_function, optimizer, device, num_y
     total_correct = np.zeros(num_yaku)
     total_samples = 0
 
-    for inputs, labels_all in loader:
+    pbar = tqdm(loader, desc=f"Epoch {epoch} [Train]", leave=False)
+
+    for inputs, labels_all in pbar:
         inputs = inputs.to(device, non_blocking=True)
         labels_all = labels_all.to(device, non_blocking=True)
 
@@ -103,8 +112,8 @@ def _train_step(models, indices, loader, loss_function, optimizer, device, num_y
 
 
 @torch.no_grad()
-def _valid_step(models, indices, loader, loss_function, device, num_yaku):
-    """Execute a single validation epoch."""
+def _valid_step(models, indices, loader, loss_function, device, num_yaku, epoch):
+    """Execute a single validation epoch with progress bar."""
     for model in models:
         model.eval()
 
@@ -112,7 +121,9 @@ def _valid_step(models, indices, loader, loss_function, device, num_yaku):
     total_correct = np.zeros(num_yaku)
     total_samples = 0
 
-    for inputs, labels_all in loader:
+    pbar = tqdm(loader, desc=f"Epoch {epoch} [Valid]", leave=False)
+
+    for inputs, labels_all in pbar:
         inputs = inputs.to(device, non_blocking=True)
         labels_all = labels_all.to(device, non_blocking=True)
 
@@ -204,11 +215,13 @@ def train_yakus(indices, yaku_names, parsed_args, device):
     for epoch in range(exp1_config.MAX_EPOCHS):
         logging.info("Epoch %d/%d: Training phase...", epoch + 1, exp1_config.MAX_EPOCHS)
         train_losses, train_accs = _train_step(
-            models, indices, train_loader, loss_function, optimizer, device, num_yaku
+            models, indices, train_loader, loss_function, optimizer, device, num_yaku, epoch + 1
         )
 
         logging.info("Epoch %d/%d: Validation phase...", epoch + 1, exp1_config.MAX_EPOCHS)
-        valid_losses, valid_accs = _valid_step(models, indices, valid_loader, loss_function, device, num_yaku)
+        valid_losses, valid_accs = _valid_step(
+            models, indices, valid_loader, loss_function, device, num_yaku, epoch + 1
+        )
 
         log_dict = {"epoch": epoch + 1}
 
@@ -266,9 +279,9 @@ def train_yakus(indices, yaku_names, parsed_args, device):
 
 def main(parsed_args):
     """Main function for training."""
-    random.seed(exp1_config.SEED)
-    np.random.seed(exp1_config.SEED)
-    torch.manual_seed(exp1_config.SEED)
+    random.seed(common_config.SEED)
+    np.random.seed(common_config.SEED)
+    torch.manual_seed(common_config.SEED)
 
     device = torch.device(f"cuda:{parsed_args.gpu}" if torch.cuda.is_available() else "cpu")
 
