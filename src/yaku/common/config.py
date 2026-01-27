@@ -12,9 +12,9 @@ YAKU_DISTRIBUTION_FILE = YAKU_RESULT_DIR / "yaku_distribution.csv"
 # --- Dataset split parameters ---
 SEED = 42
 TOTAL_EXTRACT_ROUNDS = 1000000
-TRAIN_RATIO = 0.90
-VALID_RATIO = 0.05
-TEST_RATIO = 0.05
+TRAIN_RATIO = 0.80
+VALID_RATIO = 0.10
+TEST_RATIO = 0.10
 
 # --- Research Constraints ---
 YAKU_THRESHOLD_RATIO = 0.0001
