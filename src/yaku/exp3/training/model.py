@@ -1,12 +1,12 @@
 import torch.nn as nn
 from torchinfo import summary
 
-from src.yaku.exp3 import config as yaku_config
+import src.yaku.exp3.config as config
 
 
 class DNN(nn.Module):
     """
-    Multi-task DNN
+    DNN
     """
 
     def __init__(
@@ -67,9 +67,9 @@ class DNN(nn.Module):
 
 if __name__ == "__main__":
     model = DNN(
-        input_dim=yaku_config.INPUT_DIM,
-        hidden_layers=yaku_config.HIDDEN_LAYERS,
-        output_dim=yaku_config.OUTPUT_DIM,
+        input_dim=config.INPUT_DIM,
+        hidden_layers=config.HIDDEN_LAYERS,
+        output_dim=config.OUTPUT_DIM,
     )
 
-    summary(model, input_size=(yaku_config.LEARNING_BATCH_SIZE, yaku_config.INPUT_DIM))
+    summary(model, input_size=(config.LEARNING_BATCH_SIZE, config.INPUT_DIM))

@@ -24,9 +24,8 @@ from tqdm import TqdmExperimentalWarning
 from src.config import MODEL_DIR
 import src.yaku.common.config as common_config
 from src.yaku.common.yaku_encoder import YakuEncoder
-import src.yaku.exp1.config as exp1_config
-import src.yaku.exp2.config as exp2_config
-from src.yaku.exp2.training.model import DNN
+import src.yaku.exp4.config as exp4_config
+from src.yaku.exp4.training.model import Transformer
 
 
 def setup_logging():
@@ -49,8 +48,8 @@ class YakuDataset(Dataset):
 
     def __init__(self, data_dir: Path):
         """Initialize the dataset with input/output directories."""
-        self.input_dir = data_dir / exp1_config.INPUT_FILENAME_PREFIX
-        self.output_dir = data_dir / exp1_config.OUTPUT_FILENAME_PREFIX
+        self.input_dir = data_dir / exp4_config.INPUT_FILENAME_PREFIX
+        self.output_dir = data_dir / exp4_config.OUTPUT_FILENAME_PREFIX
 
         self.input_files = sorted(list(self.input_dir.glob("*.npy")))
         self.output_files = sorted(list(self.output_dir.glob("*.npy")))
@@ -88,11 +87,15 @@ def evaluate_models(indices: list, yaku_names: list, loader: DataLoader, device:
     """Evaluate trained multi-task model and return metrics."""
     num_yaku = len(indices)
 
-    model_path = MODEL_DIR / common_config.PROJECT_NAME / exp2_config.GROUP_NAME / "best_model.pth"
-    model = DNN(
-        input_dim=exp2_config.INPUT_DIM,
-        hidden_layers=exp2_config.HIDDEN_LAYERS,
-        output_dim=exp2_config.OUTPUT_DIM,
+    model_path = MODEL_DIR / common_config.PROJECT_NAME / exp4_config.GROUP_NAME / "best_model.pth"
+    model = Transformer(
+        input_dimension=exp4_config.INPUT_DIM,
+        num_tokens=exp4_config.NUM_TOKENS,
+        embedding_dim=exp4_config.EMBEDDING_DIM,
+        num_heads=exp4_config.NUM_HEADS,
+        num_layers=exp4_config.NUM_LAYERS,
+        feed_forward_dimension=exp4_config.HIDDEN_DIM,
+        output_dim=exp4_config.OUTPUT_DIM,
     ).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
@@ -146,7 +149,7 @@ def evaluate_models(indices: list, yaku_names: list, loader: DataLoader, device:
 
         basic_metrics.append(
             {
-                "yaku_name": yaku_names[i],
+                "yaku_name": yaku_name[i],
                 "loss": yaku_losses[i] / total_samples,
                 "accuracy": accuracy,
                 "precision": precision,
@@ -177,10 +180,10 @@ def main(parsed_args: argparse.Namespace):
     indices = list(range(len(yaku_names)))
 
     logging.info("Preparing Dataset and DataLoader...")
-    test_dataset = YakuDataset(exp1_config.VALID_DIR)
+    test_dataset = YakuDataset(exp4_config.VALID_DIR)
     test_loader = DataLoader(
         test_dataset,
-        batch_size=exp2_config.LEARNING_BATCH_SIZE,
+        batch_size=exp4_config.LEARNING_BATCH_SIZE,
         shuffle=False,
         num_workers=os.cpu_count(),
         pin_memory=True,
@@ -189,7 +192,7 @@ def main(parsed_args: argparse.Namespace):
     logging.info("Starting evaluation for %d Yakus...", len(yaku_names))
     evaluation_results = evaluate_models(indices, yaku_names, test_loader, device)
 
-    output_directory = exp2_config.RESULT_DIR
+    output_directory = exp4_config.RESULT_DIR
     output_directory.mkdir(parents=True, exist_ok=True)
 
     df_basic = pd.DataFrame(evaluation_results["basic"])

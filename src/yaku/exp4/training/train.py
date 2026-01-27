@@ -8,7 +8,6 @@ import random
 import warnings
 
 import numpy as np
-import pandas as pd
 from rich.logging import RichHandler
 import torch
 import torch.nn as nn
@@ -20,9 +19,8 @@ import wandb
 from src.config import MODEL_DIR
 import src.yaku.common.config as common_config
 from src.yaku.common.yaku_encoder import YakuEncoder
-import src.yaku.exp1.config as exp1_config
-import src.yaku.exp3.config as exp3_config
-from src.yaku.exp3.training.model import DNN
+import src.yaku.exp4.config as exp4_config
+from src.yaku.exp4.training.model import Transformer
 
 
 def setup_logging():
@@ -45,8 +43,8 @@ class YakuDataset(Dataset):
 
     def __init__(self, data_dir: Path):
         """Initialize the dataset with input/output directories."""
-        self.input_dir = data_dir / exp1_config.INPUT_FILENAME_PREFIX
-        self.output_dir = data_dir / exp1_config.OUTPUT_FILENAME_PREFIX
+        self.input_dir = data_dir / exp4_config.INPUT_FILENAME_PREFIX
+        self.output_dir = data_dir / exp4_config.OUTPUT_FILENAME_PREFIX
 
         self.input_files = sorted(list(self.input_dir.glob("*.npy")))
         self.output_files = sorted(list(self.output_dir.glob("*.npy")))
@@ -156,61 +154,57 @@ def train_yakus(yaku_names: list, parsed_args: argparse.Namespace, device: torch
 
     if use_wandb:
         logging.info("Initializing WandB...")
-        clean_config = {k: str(v) if isinstance(v, Path) else v for k, v in vars(exp3_config).items() if k.isupper()}
+        clean_config = {k: str(v) if isinstance(v, Path) else v for k, v in vars(exp4_config).items() if k.isupper()}
         clean_config["yaku_names"] = yaku_names
 
         wandb.init(
             project=common_config.PROJECT_NAME,
-            group=exp3_config.GROUP_NAME,
+            group=exp4_config.GROUP_NAME,
             name=parsed_args.name,
             config=clean_config,
         )
 
-    logging.info("Preparing Datasets and DataLoaders (using Exp1 data)...")
-    train_dataset = YakuDataset(exp1_config.TRAIN_DIR)
-    valid_dataset = YakuDataset(exp1_config.VALID_DIR)
+    logging.info("Preparing Datasets and DataLoaders (using Exp4 data)...")
+    train_dataset = YakuDataset(exp4_config.TRAIN_DIR)
+    valid_dataset = YakuDataset(exp4_config.VALID_DIR)
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=exp3_config.LEARNING_BATCH_SIZE,
+        batch_size=exp4_config.LEARNING_BATCH_SIZE,
         shuffle=True,
         num_workers=os.cpu_count(),
         pin_memory=True,
     )
     valid_loader = DataLoader(
         valid_dataset,
-        batch_size=exp3_config.LEARNING_BATCH_SIZE,
+        batch_size=exp4_config.LEARNING_BATCH_SIZE,
         shuffle=False,
         num_workers=os.cpu_count(),
         pin_memory=True,
     )
 
-    # Calculate positive weights: (Total - Count) / Count
-    logging.info("Calculating positive weights from distribution file...")
-    yaku_dist_df = pd.read_csv(common_config.YAKU_DISTRIBUTION_FILE)
-
-    train_total = 800000.0
-    pos_counts = torch.tensor(yaku_dist_df["Train Count / 800000"].values, dtype=torch.float, device=device)
-    pos_weight = (train_total - pos_counts) / pos_counts
-
-    logging.info("Initializing Multi-task DNN on device: %s", device)
-    model = DNN(
-        input_dim=exp3_config.INPUT_DIM,
-        hidden_layers=exp3_config.HIDDEN_LAYERS,
+    logging.info("Initializing Multi-task Transformer on device: %s", device)
+    model = Transformer(
+        input_dimension=exp4_config.INPUT_DIM,
+        num_tokens=exp4_config.NUM_TOKENS,
+        embedding_dim=exp4_config.EMBEDDING_DIM,
+        num_heads=exp4_config.NUM_HEADS,
+        num_layers=exp4_config.NUM_LAYERS,
+        feed_forward_dimension=exp4_config.HIDDEN_DIM,
         output_dim=num_yaku,
     ).to(device)
 
-    loss_function = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    optimizer = torch.optim.Adam(model.parameters(), lr=exp3_config.LEARNING_RATE)
+    loss_function = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=exp4_config.LEARNING_RATE)
 
     best_mean_valid_loss = float("inf")
     early_stop_counter = 0
-    save_dir = MODEL_DIR / common_config.PROJECT_NAME / exp3_config.GROUP_NAME
+    save_dir = MODEL_DIR / common_config.PROJECT_NAME / exp4_config.GROUP_NAME
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    logging.info("Starting training loop (Total Epochs: %d)...", exp3_config.MAX_EPOCHS)
+    logging.info("Starting training loop (Total Epochs: %d)...", exp4_config.MAX_EPOCHS)
 
-    for epoch in range(exp3_config.MAX_EPOCHS):
+    for epoch in range(exp4_config.MAX_EPOCHS):
         train_losses, train_accs = _train_step(
             model, train_loader, loss_function, optimizer, device, num_yaku, epoch + 1
         )
@@ -242,7 +236,7 @@ def train_yakus(yaku_names: list, parsed_args: argparse.Namespace, device: torch
             logging.info("Best model saved at epoch %d", epoch + 1)
         else:
             early_stop_counter += 1
-            if early_stop_counter >= exp3_config.EARLY_STOPPING_PATIENCE:
+            if early_stop_counter >= exp4_config.EARLY_STOPPING_PATIENCE:
                 logging.info("Early Stopping reached (Mean Valid Loss).")
                 break
 

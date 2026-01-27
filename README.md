@@ -26,10 +26,11 @@ python -m src.data.main
 python -m src.data.export
 python -m src.yaku.common.split_dataset
 python -m src.yaku.exp1.feature.create_dataset
-CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp1.training.train --yaku_indices 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 --gpu 0 --no_wandb
-python -m src.yaku.exp1.training.test --gpu 2
-CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp2.training.train --gpu 0 --no_wandb
-python -m src.yaku.exp2.training.test --gpu 2
-CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp3.training.train --gpu 0 --no_wandb
-python -m src.yaku.exp3.training.test --gpu 2
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp1.training.train --no_wandb
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp1.training.test
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp2.training.train --no_wandb
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp2.training.test
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp3.training.train --no_wandb
+CUDA_VISIBLE_DEVICES=GPU-c1b713ce-d6a4-e657-727a-32f16a581f53 python -m src.yaku.exp3.training.test
+python -m src.yaku.exp4.feature.create_dataset
 ```

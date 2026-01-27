@@ -12,6 +12,8 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     roc_auc_score,
     average_precision_score,
+    confusion_matrix,
+    matthews_corrcoef,
 )
 import torch
 import torch.nn as nn
@@ -136,6 +138,10 @@ def evaluate_models(indices: list, yaku_names: list, loader: DataLoader, device:
             labels, preds, average="binary", zero_division=0
         )
         accuracy = accuracy_score(labels, preds)
+        mcc = matthews_corrcoef(labels, preds)
+
+        tn, fp, fn, tp = confusion_matrix(labels, preds, labels=[0, 1]).ravel()
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
 
         roc_auc = roc_auc_score(labels, probs) if len(np.unique(labels)) > 1 else np.nan
         pr_auc = average_precision_score(labels, probs) if len(np.unique(labels)) > 1 else np.nan
@@ -148,6 +154,8 @@ def evaluate_models(indices: list, yaku_names: list, loader: DataLoader, device:
                 "precision": precision,
                 "recall": recall,
                 "f1_score": f1_score,
+                "specificity": specificity,
+                "mcc": mcc,
             }
         )
 

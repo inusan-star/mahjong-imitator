@@ -16,9 +16,9 @@ from tqdm.rich import tqdm
 
 import src.config as global_config
 import src.yaku.common.config as common_config
-import src.yaku.exp4.config as exp4_config  # exp1から変更
+import src.yaku.exp4.config as exp4_config
 from src.yaku.common.yaku_encoder import YakuEncoder
-from src.yaku.exp4.feature.obs_encoder import ObservationEncoder  # exp4用のエンコーダに変更
+from src.yaku.exp4.feature.obs_encoder import ObservationEncoder
 
 worker_obs_encoder: ObservationEncoder = None  # type: ignore
 worker_yaku_encoder: YakuEncoder = None  # type: ignore
@@ -57,7 +57,6 @@ def _save_chunk(chunk_count: int, input_list: List[np.ndarray], output_list: Lis
     input_path = input_directory / f"chunk_{chunk_count:03d}.npy"
     output_path = output_directory / f"chunk_{chunk_count:03d}.npy"
 
-    # Transformer用入力は (SEQ_LEN, FEATURE_DIM) の形状。float32で保存
     np.save(input_path, np.array(input_list, dtype=np.float32))
     np.save(output_path, np.array(output_list, dtype=np.float32))
 
@@ -111,7 +110,6 @@ def _process_round(args: Tuple[str, Dict[str, Any]]) -> List[Tuple[str, np.ndarr
             if np.sum(yaku_vector.numpy()) == 0:
                 continue
 
-            # [cite_start]既存研究のターゲットアクション [cite: 185, 186]
             target_action_types = [
                 mjx.ActionType.DISCARD,
                 mjx.ActionType.TSUMOGIRI,
@@ -136,7 +134,7 @@ def _process_round(args: Tuple[str, Dict[str, Any]]) -> List[Tuple[str, np.ndarr
                 results.append(
                     (
                         split,
-                        worker_obs_encoder.encode(observation),  # (35, 22) 形式を生成
+                        worker_obs_encoder.encode(observation),
                         yaku_vector.numpy(),
                     )
                 )
@@ -163,7 +161,7 @@ def main():
     with open(common_config.SPLITS_FILE, "r", encoding="utf-8") as file:
         game_allocation_map = json.load(file)
 
-    logging.info("Starting dataset creation for experiment 4 (Transformer) ...")
+    logging.info("Starting dataset creation for experiment 4 ...")
 
     split_directory_map = {"train": exp4_config.TRAIN_DIR, "valid": exp4_config.VALID_DIR, "test": exp4_config.TEST_DIR}
     buffers = {split: {"input": [], "output": []} for split in split_directory_map}
@@ -186,17 +184,20 @@ def main():
 
                     if yaku_distribution[split] is None:
                         yaku_distribution[split] = yaku_np.copy()
+
                     else:
                         yaku_distribution[split] += yaku_np
 
                     if len(buffers[split]["input"]) >= exp4_config.CHUNK_SIZE:
                         chunk_counts[split] += 1
+
                         _save_chunk(
                             chunk_counts[split],
                             buffers[split]["input"],
                             buffers[split]["output"],
                             split_directory_map[split],
                         )
+
                         buffers[split]["input"].clear()
                         buffers[split]["output"].clear()
 

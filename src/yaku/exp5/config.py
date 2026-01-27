@@ -1,15 +1,15 @@
 from src.yaku.common.config import YAKU_DATA_DIR, YAKU_RESULT_DIR
 
 # --- WandB settings ---
-GROUP_NAME = "exp3"
+GROUP_NAME = "exp5"
 
 # --- Directory settings ---
-DATA_DIR = YAKU_DATA_DIR / "exp1"
+DATA_DIR = YAKU_DATA_DIR / "exp4"
 TRAIN_DIR = DATA_DIR / "train"
 VALID_DIR = DATA_DIR / "valid"
 TEST_DIR = DATA_DIR / "test"
 
-RESULT_DIR = YAKU_RESULT_DIR / "exp3"
+RESULT_DIR = YAKU_RESULT_DIR / "exp5"
 
 DATA_STATS_CSV = RESULT_DIR / "data_stats.csv"
 
@@ -20,9 +20,14 @@ OUTPUT_FILENAME_PREFIX = "output"
 CHUNK_SIZE = 100000
 
 # --- Network architecture ---
-INPUT_DIM = 472
+SEQ_LEN = 35
+TOKEN_FEATURE_DIM = 22
+D_MODEL = 128
+NUM_HEADS = 8
+NUM_LAYERS = 4
+DIM_FEEDFORWARD = 512
+DROPOUT = 0.1
 OUTPUT_DIM = 33
-HIDDEN_LAYERS = [512, 512, 256, 256, 256, 64]
 
 # --- Training hyperparameters ---
 LEARNING_RATE = 5e-4

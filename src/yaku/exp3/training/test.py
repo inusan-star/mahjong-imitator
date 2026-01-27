@@ -12,6 +12,8 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     roc_auc_score,
     average_precision_score,
+    confusion_matrix,
+    matthews_corrcoef,
 )
 import torch
 import torch.nn as nn
@@ -23,8 +25,8 @@ from src.config import MODEL_DIR
 import src.yaku.common.config as common_config
 from src.yaku.common.yaku_encoder import YakuEncoder
 import src.yaku.exp1.config as exp1_config
-import src.yaku.exp3.config as exp3_config  # exp2から変更
-from src.yaku.exp3.training.model import DNN  # exp2から変更
+import src.yaku.exp3.config as exp3_config
+from src.yaku.exp3.training.model import DNN
 
 
 def setup_logging():
@@ -82,15 +84,15 @@ class YakuDataset(Dataset):
 
 
 @torch.no_grad()
-def evaluate_model(indices: list, yaku_names: list, loader: DataLoader, device: torch.device) -> dict:
-    """Evaluate single multi-task model and return metrics."""
+def evaluate_models(indices: list, yaku_names: list, loader: DataLoader, device: torch.device) -> dict:
+    """Evaluate trained multi-task model and return metrics."""
     num_yaku = len(indices)
 
-    model_path = MODEL_DIR / common_config.PROJECT_NAME / exp3_config.GROUP_NAME / "best_model.pth"  # exp2から変更
+    model_path = MODEL_DIR / common_config.PROJECT_NAME / exp3_config.GROUP_NAME / "best_model.pth"
     model = DNN(
-        input_dim=exp3_config.INPUT_DIM,  # exp2から変更
-        hidden_layers=exp3_config.HIDDEN_LAYERS,  # exp2から変更
-        output_dim=exp3_config.OUTPUT_DIM,  # exp2から変更
+        input_dim=exp3_config.INPUT_DIM,
+        hidden_layers=exp3_config.HIDDEN_LAYERS,
+        output_dim=exp3_config.OUTPUT_DIM,
     ).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
@@ -109,14 +111,17 @@ def evaluate_model(indices: list, yaku_names: list, loader: DataLoader, device: 
         labels_all = labels_all.to(device, non_blocking=True)
         total_samples += inputs.size(0)
 
-        outputs_all = model(inputs)
-        losses_all = loss_function(outputs_all, labels_all)
+        outputs = model(inputs)
+        losses = loss_function(outputs, labels_all)
 
-        yaku_losses += losses_all.sum(dim=0).cpu().numpy()
+        yaku_losses += losses.sum(dim=0).cpu().numpy()
+
+        outputs_cpu = outputs.cpu().numpy()
+        labels_cpu = labels_all.cpu().numpy()
 
         for i in range(num_yaku):
-            all_logits[i].extend(outputs_all[:, i].cpu().numpy().flatten())
-            all_labels[i].extend(labels_all[:, i].cpu().numpy().flatten())
+            all_logits[i].extend(outputs_cpu[:, i])
+            all_labels[i].extend(labels_cpu[:, i])
 
     basic_metrics = []
     curve_metrics = []
@@ -131,6 +136,10 @@ def evaluate_model(indices: list, yaku_names: list, loader: DataLoader, device: 
             labels, preds, average="binary", zero_division=0
         )
         accuracy = accuracy_score(labels, preds)
+        mcc = matthews_corrcoef(labels, preds)
+
+        tn, fp, fn, tp = confusion_matrix(labels, preds, labels=[0, 1]).ravel()
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
 
         roc_auc = roc_auc_score(labels, probs) if len(np.unique(labels)) > 1 else np.nan
         pr_auc = average_precision_score(labels, probs) if len(np.unique(labels)) > 1 else np.nan
@@ -143,6 +152,8 @@ def evaluate_model(indices: list, yaku_names: list, loader: DataLoader, device: 
                 "precision": precision,
                 "recall": recall,
                 "f1_score": f1_score,
+                "specificity": specificity,
+                "mcc": mcc,
             }
         )
 
@@ -169,16 +180,16 @@ def main(parsed_args: argparse.Namespace):
     test_dataset = YakuDataset(exp1_config.VALID_DIR)
     test_loader = DataLoader(
         test_dataset,
-        batch_size=exp3_config.LEARNING_BATCH_SIZE,  # exp2から変更
+        batch_size=exp3_config.LEARNING_BATCH_SIZE,
         shuffle=False,
         num_workers=os.cpu_count(),
         pin_memory=True,
     )
 
-    logging.info("Starting evaluation for %d Yakus (Multi-task Exp3)...", len(yaku_names))
-    evaluation_results = evaluate_model(indices, yaku_names, test_loader, device)
+    logging.info("Starting evaluation for %d Yakus...", len(yaku_names))
+    evaluation_results = evaluate_models(indices, yaku_names, test_loader, device)
 
-    output_directory = exp3_config.RESULT_DIR  # exp2から変更
+    output_directory = exp3_config.RESULT_DIR
     output_directory.mkdir(parents=True, exist_ok=True)
 
     df_basic = pd.DataFrame(evaluation_results["basic"])
